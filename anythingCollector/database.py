@@ -8,7 +8,8 @@ class DependenciesMissing(Exception):
 
 class ManagerDatabase:
     def __init__(self):
-        self.con = sqlite3.connect("/home/macabeus/ApenasMeu/Dropbox/Python/anythingCollector/anythingCollector/mydatabase.db")
+        import os
+        self.con = sqlite3.connect(os.path.dirname(__file__) + "/mydatabase.db")
 
         self.c = self.con.cursor()
 
@@ -32,8 +33,6 @@ class ManagerDatabase:
                     ');')
 
         Crawler.db = self
-        print(Crawler.__subclasses__())
-        print('foo')
         for cls in Crawler.__subclasses__():
             setattr(self, 'crawler_' + cls.name(), cls())
         # o loop acima iniciará todas as subclasses diretas de Crawler e inicializará, como por exemplo:
