@@ -1,9 +1,9 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+import matplotlib.colors
 from crawler import Crawler
 
 
-# todo: restringir para só permitir um único objeto dessa classe
 class GraphDependencies:
     def __init__(self):
         self.graph = nx.DiGraph()
@@ -15,7 +15,7 @@ class GraphDependencies:
         ## definir cores por crawler
 
         colors = {}
-        colors_available = ['aqua', 'blueviolet', 'darkcyan', 'darkred', 'goldenrod']
+        colors_available = list(matplotlib.colors.cnames.keys())
 
         x = 0
         for i in list_crawler:
@@ -28,14 +28,14 @@ class GraphDependencies:
             for i2 in i.crop():
                 self.graph.add_node(i2)
 
-        ## crir edges
+        ## crir edges da depedência para a info que colhe
 
         for i in list_crawler:
             for i2 in i.dependencies():
                 for i3 in i.crop():
-                    self.graph.add_edge(i2, i3, color=colors[i], crawler=i)
+                    self.graph.add_edge(i2, i3, color=colors[i], crawler=i, crawler_name=i.name())
 
-        ## definir posições dos nodes
+        ## para o draw: definir posições dos nodes
 
         pos = {}
 
@@ -84,14 +84,12 @@ class GraphDependencies:
 
     def draw(self):
         edges, colors = zip(*nx.get_edge_attributes(self.graph, 'color').items())
-        #nodes, node_color = zip(*nx.get_node_attributes(G, 'node_color').items())
 
         nx.draw(self.graph, pos=self.pos_invert, with_labels=True,
                 font_size=10, font_color='r',
-                #node_color=node_color, node_size=1000,
                 node_color='black', node_size=1000,
                 edgelist=edges, edge_color=colors)
-        nx.draw_networkx_edge_labels(self.graph, pos=self.pos_invert, edge_labels=nx.get_edge_attributes(self.graph, 'crawler'), label_pos=0.85, font_size=8)
+        nx.draw_networkx_edge_labels(self.graph, pos=self.pos_invert, edge_labels=nx.get_edge_attributes(self.graph, 'crawler_name'), label_pos=0.85, font_size=8)
         # todo: em edge_labels, preciso separar por vírgula caso haja dois ou mais crawlers que levem para a mesma info
         plt.savefig("graph.png")
         plt.show()
@@ -133,7 +131,7 @@ class GraphDependenciesOfThisPeople:
                 font_size=10, font_color='r',
                 nodelist=nodes, node_color=node_color, node_size=1000,
                 edgelist=edges, edge_color=colors)
-        nx.draw_networkx_edge_labels(self.gd.graph, pos=self.pos_invert, edge_labels=nx.get_edge_attributes(self.gd.graph, 'crawler'), label_pos=0.85, font_size=8)
+        nx.draw_networkx_edge_labels(self.gd.graph, pos=self.pos_invert, edge_labels=nx.get_edge_attributes(self.gd.graph, 'crawler_name'), label_pos=0.85, font_size=8)
         # todo: em edge_labels, preciso separar por vírgula caso haja dois ou mais crawlers que levem para a mesma info
         plt.savefig("graph.png")
         plt.show()
