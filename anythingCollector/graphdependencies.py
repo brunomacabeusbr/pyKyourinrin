@@ -152,6 +152,7 @@ class GraphDependenciesOfThisPeople:
 
         for i in crawlers_to_target:
             i.harvest(id=self.id) # todo: tomar cuidado com os crawlers base, da qual não possuem o parâmetro "id"
+            # todo: parar esse loop caso haja sucesso em pegar a depedência
 
         # TODO: chamar os crawlers da lista crawlers_to_target com thread e, assim que o target for alcançado,
         # parar imediatamente todas as demais thread que estiverem rodando

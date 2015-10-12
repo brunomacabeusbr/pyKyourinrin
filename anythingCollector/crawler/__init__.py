@@ -64,27 +64,27 @@ for i in os.listdir(my_path):
 # Carregar grafo de depedência a respeito dos cralwes
 from graphdependencies import GraphDependenciesOfThisPeople
 
-# Decorator para ser usado no, para pegar as depedências e colocar no dict dependencies da chamada do método
+# Decorator implícito, colocado nos métodos harvest dos crawlers que possuem depedências,
+# para pega-las do banco de dados e colocar no dict 'dependencies' da chamada do método
 # todo: precisa implementar ainda um "ou exclussivo", para casos como o da etufor que pede data de nascimento *ou* cia
 class GetDependencies:
     def __init__(self, f):
-        self.depedencies = f.dependencies()
+        self.dependencies = f.dependencies()
         self.harvest = f.harvest
 
     def __call__(self, *args, **kwargs):
-        dependences_values = Crawler.db.get_dependences(kwargs['id'], *self.depedencies)
+        people_id = kwargs['id']
+        dict_dependencies = Crawler.db.get_dependences(people_id, *self.dependencies)
 
-        missing = [i for i, j in dependences_values.items() if j is None]
-        if len(missing) > 0:
-            gdp = GraphDependenciesOfThisPeople(Crawler.db, kwargs['id'])
-            gdp.harvest_dependence(missing[0])
-            self.__call__(*args, **kwargs)
-            return
-            # optei por fazer assim pois o harvest_dependence vai alterar o banco de dados e, desse modo,
-            # outras depedencias que possam existir podem já ter sido resolvidas em cascata
-            # todo: esse código precisa ser melhor redigito
+        # Verificar se alguma dependência não está presente no banco
+        # Se não estiver, então vai colhe-la e chamar novamente esse mesmo método
+        for dependence_name, dependence_value in dict_dependencies.items():
+            if dependence_value is None:
+                GraphDependenciesOfThisPeople(Crawler.db, people_id).harvest_dependence(dependence_name)
+                self.__call__(*args, **kwargs)
+                return
 
-        self.harvest(*args, dependencies=dependences_values, **kwargs)
+        self.harvest(*args, dependencies=dict_dependencies, **kwargs)
         Crawler.db.commit()
 
 
