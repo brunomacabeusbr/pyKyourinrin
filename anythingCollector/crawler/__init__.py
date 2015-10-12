@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 
+# Crawler base class
 class Crawler:
     __metaclass__ = ABCMeta
     db = None
@@ -44,15 +45,25 @@ class Crawler:
     @abstractmethod
     def harvest(self, id): pass
 
-# todo: por para listar tudo automaticamente
-from . import qselecao, etufor, sspds
 
-# O arquivo abaixo só pode ser importado após a classe Crawler e seus módulos serem inicializadas,
-# pois o GraphDependencies pegará as classes em que são herdadas de Crawler
-# TODO: Resolver essa super-mega-hiper-doidicie
+# Carregar todos os crawlers da pasta
+import os
+import importlib
+
+my_path = os.path.dirname(__file__)
+
+for i in os.listdir(my_path):
+    if not os.path.isfile(os.path.join(my_path, i)):
+        continue
+
+    py_name = os.path.splitext(i)[0]
+
+    importlib.import_module('crawler.' + py_name)
+
+
+# Carregar grafo de depedência a respeito dos cralwes
 from graphdependencies import GraphDependenciesOfThisPeople
 
-# todo: conforme o PEP 20 (https://www.python.org/dev/peps/pep-0020/), não é legal algo implícito, mas sim algo explícito
 # Decorator para ser usado no, para pegar as depedências e colocar no dict dependencies da chamada do método
 # todo: precisa implementar ainda um "ou exclussivo", para casos como o da etufor que pede data de nascimento *ou* cia
 class GetDependencies:
