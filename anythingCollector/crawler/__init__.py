@@ -18,8 +18,13 @@ class Crawler:
     def create_my_table(self): pass
 
     @classmethod
-    def update_my_table(cls, id, column_and_value):
-        Crawler.db.execute("INSERT INTO " + cls.name() + " (peopleid," + ','.join(column_and_value.keys()) + ") VALUES (?," + ('"' + '","'.join(list(map(str, column_and_value.values()))) + '"') + ")", (id,))
+    def update_my_table(cls, id, column_and_value, table=None):
+        if table is None:
+            table = cls.name()
+        else:
+            table = cls.name() + '_' + table
+
+        Crawler.db.execute("INSERT INTO " + table + " (peopleid," + ','.join(column_and_value.keys()) + ") VALUES (?," + ('"' + '","'.join(list(map(str, column_and_value.values()))) + '"') + ")", (id,))
 
     # id deve ser, preferencialmente, o id da coluna da pessoa, ou então o nome dela
     @classmethod
