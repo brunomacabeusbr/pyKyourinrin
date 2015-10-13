@@ -55,7 +55,7 @@ class CrawlerEtufor(Crawler):
                 value = ''
             return value
 
-        if count_total_box_table == 7:
+        if count_total_box_table() == 7:
             # pessoa nao tem carteira da etufor
             cls.update_crawler(id, -1)
             return
