@@ -2,10 +2,6 @@ import sqlite3
 from crawler import Crawler
 
 
-class DependenciesMissing(Exception):
-    pass
-
-
 class ManagerDatabase:
     def __init__(self):
         import os
@@ -36,8 +32,8 @@ class ManagerDatabase:
         for cls in Crawler.__subclasses__():
             setattr(self, 'crawler_' + cls.name(), cls())
         # o loop acima iniciará todas as subclasses diretas de Crawler e inicializará, como por exemplo:
-        # self.crawler_etufor = CrawlerEtufor(self)
-        # self.crawler_qselecao = CrawlerQSelecao(self)
+        # self.crawler_etufor = CrawlerEtufor()
+        # self.crawler_qselecao = CrawlerQSelecao()
 
         # salvar as mudanças no banco
         self.commit()
@@ -47,6 +43,15 @@ class ManagerDatabase:
 
     def commit(self):
         return self.con.commit()
+
+    def select_column_and_value(self, sql, parameters=()):
+        execute = self.execute(sql, parameters)
+        fetch = execute.fetchone()
+
+        if fetch is None:
+            return {k[0]: None for k in execute.description}
+
+        return {k[0]: v for k, v in list(zip(execute.description, fetch))}
 
     def new_people_if_not_exist(self, name): # todo: por para usar outros dados além do nome, algo como um parâmetro opcional dizendo a coluna alvo, ficadando column_target='name'
         if len(self.execute("SELECT * FROM peoples WHERE name=?", (name,)).fetchall()) == 0:
@@ -59,51 +64,19 @@ class ManagerDatabase:
         self.execute("UPDATE peoples SET " + ','.join('{}="{}"'.format(key, val) for key, val in column_and_value.items()) + " WHERE name=?", (name,))
 
     def crawler_status(self, id):
-        crawlers_to_select = []
-        for cls in Crawler.__subclasses__():
-            crawlers_to_select.append(cls.name())
-
-        x = self.execute("SELECT " + ','.join(crawlers_to_select) + " FROM crawler WHERE peopleid=?", (id,)).fetchone()
-
-        dict_to_return = {}
-        i = 0
-        for cls in Crawler.__subclasses__():
-            dict_to_return[cls.name()] = x[i]
-            i += 1
-
-        return dict_to_return
+        fieldnames = self.select_column_and_value('SELECT * FROM crawler WHERE peopleid=?', (id,))
+        del fieldnames['peopleid']
+        return fieldnames
 
     def get_people_info(self, id):
-        x = self.execute("SELECT * FROM peoples WHERE id=?", (id,))
-        y = x.fetchone()
-        fieldnames = {}
+        fieldnames = self.select_column_and_value("SELECT * FROM peoples WHERE id=?", (id,))
 
-        count = 0
-        for i in x.description:
-            fieldnames[i[0]] = y[count]
-            count += 1
+        for cls in Crawler.__subclasses__():
+            # todo: desse jeito pegará apenas a tabela principal do crawler. tomar cuidado para saber se isso causará problemas ou não
+            fieldnames.update(self.select_column_and_value("SELECT * FROM %s WHERE peopleid=?" % cls.name(), (id,)))
 
         del fieldnames['id']
-
-        # todo: código terá que ser reformulado, para atender as mudanças na organização das tabelas, na qual há crawlers com tabelas próprias
-        # por enquanto, fica com essa gambiarra aqui
-        query = self.execute("SELECT cia FROM etufor WHERE peopleid=?", (id,)).fetchone()
-        if query:
-            fieldnames['cia'] = query[0]
-        else:
-            fieldnames['cia'] = None
-
-        query = self.execute("SELECT registrocriminal FROM sspds WHERE peopleid=?", (id,)).fetchone()
-        if query:
-            fieldnames['registrocriminal'] = query[0]
-        else:
-            fieldnames['registrocriminal'] = None
-
-        query = self.execute("SELECT anything FROM thisdoesnotexist WHERE peopleid=?", (id,)).fetchone()
-        if query:
-            fieldnames['anything'] = query[0]
-        else:
-            fieldnames['anything'] = None
+        del fieldnames['peopleid']
 
         return fieldnames
 
