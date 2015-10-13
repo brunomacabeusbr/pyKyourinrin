@@ -79,7 +79,7 @@ class GetDependencies:
 
     def __call__(self, *args, **kwargs):
         people_id = kwargs['id']
-        dict_dependencies = Crawler.db.get_dependences(people_id, *self.dependencies)
+        dict_dependencies = Crawler.db.get_dependencies(people_id, *self.dependencies)
 
         # Verificar se alguma dependência não está presente no banco
         # Se não estiver, então vai colhe-la e chamar novamente esse mesmo método

@@ -114,7 +114,7 @@ class GraphDependenciesOfThisPeople:
                         self.gd.graph.remove_edge(*i)
 
         # marcar nodes com dados já obtidos
-        people_status = self.db.get_people_info(self.id)
+        people_status = self.db.get_people_info_all(self.id)
         for k, v in people_status.items():
             if v != None:
                 self.gd.graph.node[k]['node_color'] = 'blue'

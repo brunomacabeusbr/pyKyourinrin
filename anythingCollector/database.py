@@ -68,7 +68,7 @@ class ManagerDatabase:
         del fieldnames['peopleid']
         return fieldnames
 
-    def get_people_info(self, id):
+    def get_people_info_all(self, id):
         fieldnames = self.select_column_and_value("SELECT * FROM peoples WHERE id=?", (id,))
 
         for cls in Crawler.__subclasses__():
@@ -80,14 +80,8 @@ class ManagerDatabase:
 
         return fieldnames
 
-    def get_dependences(self, id, *dependences):
-        people_infos = self.get_people_info(id)
-
-        to_return = {} # todo: talvez haja um meio melhor para fazer isso
-        for i in dependences:
-            to_return[i] = people_infos[i]
-
-        return to_return
+    def get_dependencies(self, id, *dependencies):
+        return {k: v for k, v in self.get_people_info_all(id).items() if k in dependencies}
 
     def get_tableid_of_people(self, name): # todo: por para usar outros dados além do nome, algo como um parâmetro opcional dizendo a coluna alvo, ficadando column_target='name'
         return self.execute("SELECT * FROM peoples WHERE name=?", (name,)).fetchone()[0]
