@@ -5,11 +5,10 @@ from selenium import webdriver
 
 
 class CrawlerQSelecao(Crawler):
-    # todo: e se a pessoa tiver se inscrito em mais que um concurso? fazer histórico dos concursos em que a pessoa participou
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
                             'peopleid INTEGER,'
-                            'concursoparticipou TEXT,'
+                            'name_public_tender TEXT,'
                             'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
                         ');' % self.name())
 
@@ -26,7 +25,8 @@ class CrawlerQSelecao(Crawler):
         return 'name', 'identity', 'birthday_day', 'birthday_month', 'birthday_year',
 
     # salva no banco todos dados de todos os candidatos de todos os concursos
-    def harvest(self, specifc_concurso=None):
+    @classmethod
+    def harvest(cls, specifc_concurso=None):
         # retorna todos os id de candidatos de concursos
         def crawler_all_qselecao_concursos():
             phantom = webdriver.PhantomJS()
@@ -91,21 +91,26 @@ class CrawlerQSelecao(Crawler):
         def crawler_specific_qselecao_cartao_identificacao(id):
             r = requests.get('http://qselecao.ifce.edu.br/cartao_identificacao_dinamico.aspx?idcandidatoconcurso=' + str(id) + '&etapa=1')
 
+            spanPublicTender =  '<span style="display:inline-block;font-family:Arial;font-size:8pt;font-weight:bold;height:4px;width:180px;position:absolute;left:0px;top:2px;width:680px;Height:15px;text-align:center;">'
             spanName = '<span style="display:inline-block;font-family:Arial;font-size:8pt;height:4px;width:155px;position:absolute;left:117px;top:43px;width:586px;Height:15px;text-align:left;">'
             spanIdentity = '<span style="display:inline-block;font-family:Arial;font-size:8pt;height:4px;width:30px;position:absolute;left:113px;top:57px;width:113px;Height:15px;text-align:left;">'
             spanBirthday = '<span style="display:inline-block;font-family:Arial;font-size:8pt;height:4px;width:30px;position:absolute;left:330px;top:57px;width:113px;Height:15px;text-align:left;">'
 
+            regexPublicTender = re.compile(spanPublicTender + '(.*?)</span>')
             regexName = re.compile(spanName + '(.*?)</span>')
             regexIdentity = re.compile(spanIdentity + '(.*?)</span>')
             regexBirthday = re.compile(spanBirthday + '(\d+)/(\d+)/(\d+)</span>')
 
+            publicTender =  regexPublicTender.search(r.text).group(1)
             peopleName = regexName.search(r.text).group(1)
             peopleIdentity = int(re.sub('[^\d]+', '', regexIdentity.search(r.text).group(1)))
             peopleBirthdayDay, peopleBirthdayMonth, peopleBirthdayYear = regexBirthday.search(r.text).groups()
 
-            self.db.update_people(peopleName,
+            cls.db.update_people(peopleName,
                                   {'identity': peopleIdentity, 'birthday_day': peopleBirthdayDay, 'birthday_month': peopleBirthdayMonth, 'birthday_year': peopleBirthdayYear})
-            self.update_crawler(peopleName, 1)
+            talbeid = cls.db.get_tableid_of_people(peopleName)
+            cls.update_my_table(talbeid, {'name_public_tender': publicTender})
+            cls.update_crawler(peopleName, 1)
 
         if specifc_concurso is None:
             target = crawler_all_qselecao_concursos()
