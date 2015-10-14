@@ -85,7 +85,7 @@ class CrawlerEtufor(Crawler):
 
             timestamp_day, timestamp_month, timestamp_year, timestamp_hour, timestamp_minute, timestamp_second =\
                 regexp_date.search(timestamp).groups()
-            timestamp_iso = str(datetime.datetime(timestamp_year, timestamp_month, timestamp_day. timestamp_hour, timestamp_minute, timestamp_second))
+            timestamp_iso = str(datetime.datetime(int(timestamp_year), int(timestamp_month), int(timestamp_day), int(timestamp_hour), int(timestamp_minute), int(timestamp_second)))
 
             cls.update_my_table(id, {'timestamp': timestamp_iso, 'school': school, 'type': school_type, 'course': course, 'turn': turn}, table='records_school')
             pos += 10
