@@ -48,16 +48,21 @@ class CrawlerQSelecao(Crawler):
 
             def pages_number_next():
                 element_next_page = phantom.execute_script(
-                    "currentPage = parseInt(parseInt($('#ctl00_ContentPlaceHolderPrincipal_grvConsulta tbody:last span').html()));"
-                    "if (currentPage > 15) { currentPage %= 15; currentPage += 2 };"
-                    "link_next_page = $('#ctl00_ContentPlaceHolderPrincipal_grvConsulta tbody:last td').eq(currentPage).find('a');"
-                    "if (link_next_page.length > 0) {"
-                    "  return link_next_page;"
+                    "var pages_number = $('#ctl00_ContentPlaceHolderPrincipal_grvConsulta tbody:last td');"
+                    "var page_number_current = $('#ctl00_ContentPlaceHolderPrincipal_grvConsulta tbody:last span').parent();"
+                    "for (var i = 0; i < pages_number.length; i++) {"
+                    "  if (pages_number.eq(i).is(page_number_current)) {"
+                    "    break"
+                    "  }"
+                    "}"
+                    "var page_number_next = pages_number.eq(i + 1).find('a');"
+                    "if (page_number_next.length) {"
+                    "  return page_number_next;"
                     "} else {"
                     "  return false;"
                     "}")
 
-                if element_next_page == False:
+                if element_next_page is False:
                     return False
 
                 element_next_page[0].click()
