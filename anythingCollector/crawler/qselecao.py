@@ -9,6 +9,7 @@ class CrawlerQSelecao(Crawler):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
                             'peopleid INTEGER,'
                             'name_public_tender TEXT,'
+                            'course TEXT,'
                             'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
                         ');' % self.name())
 
@@ -24,7 +25,8 @@ class CrawlerQSelecao(Crawler):
     def crop():
         return 'name', 'identity', 'birthday_day', 'birthday_month', 'birthday_year',
 
-    # salva no banco todos dados de todos os candidatos de todos os concursos
+    # salva no banco todos dados de todos os candidatos de todos os concursos ou do concurso especificado
+    # todo: salvar no banco os cocnursos já lidos
     @classmethod
     def harvest(cls, specifc_concurso=None):
         # retorna todos os id de candidatos de concursos
@@ -96,25 +98,37 @@ class CrawlerQSelecao(Crawler):
         def crawler_specific_qselecao_cartao_identificacao(id):
             r = requests.get('http://qselecao.ifce.edu.br/cartao_identificacao_dinamico.aspx?idcandidatoconcurso=' + str(id) + '&etapa=1')
 
+            if r.text[:43] == 'Não foi possível obter os dados desta etapa':
+                return
+
             spanPublicTender =  '<span style="display:inline-block;font-family:Arial;font-size:8pt;font-weight:bold;height:4px;width:180px;position:absolute;left:0px;top:2px;width:680px;Height:15px;text-align:center;">'
+            spanCourse = '<span style="display:inline-block;font-family:Arial;font-size:8pt;height:4px;width:155px;position:absolute;left:113px;top:123px;width:586px;Height:15px;text-align:left;">'
             spanName = '<span style="display:inline-block;font-family:Arial;font-size:8pt;height:4px;width:155px;position:absolute;left:117px;top:43px;width:586px;Height:15px;text-align:left;">'
             spanIdentity = '<span style="display:inline-block;font-family:Arial;font-size:8pt;height:4px;width:30px;position:absolute;left:113px;top:57px;width:113px;Height:15px;text-align:left;">'
             spanBirthday = '<span style="display:inline-block;font-family:Arial;font-size:8pt;height:4px;width:30px;position:absolute;left:330px;top:57px;width:113px;Height:15px;text-align:left;">'
 
             regexPublicTender = re.compile(spanPublicTender + '(.*?)</span>')
+            regexCourse = re.compile(spanCourse + '(.*?)</span>')
             regexName = re.compile(spanName + '(.*?)</span>')
             regexIdentity = re.compile(spanIdentity + '(.*?)</span>')
             regexBirthday = re.compile(spanBirthday + '(\d+)/(\d+)/(\d+)</span>')
 
             publicTender =  regexPublicTender.search(r.text).group(1)
+            course = regexCourse.search(r.text).group(1)
             peopleName = regexName.search(r.text).group(1)
-            peopleIdentity = int(re.sub('[^\d]+', '', regexIdentity.search(r.text).group(1)))
             peopleBirthdayDay, peopleBirthdayMonth, peopleBirthdayYear = regexBirthday.search(r.text).groups()
+            peopleIdentity = re.sub('[^\d]+', '', regexIdentity.search(r.text).group(1))
+
+            cls.db.update_people(peopleName,
+                                  {'birthday_day': peopleBirthdayDay, 'birthday_month': peopleBirthdayMonth, 'birthday_year': peopleBirthdayYear})
+            if peopleIdentity.isdecimal():
+                # há casos a serem lidados como em http://qselecao.ifce.edu.br/cartao_identificacao_dinamico.aspx?idcandidatoconcurso=328680&etapa=1
+                cls.db.update_people(peopleName, {'identity': peopleIdentity})
 
             cls.db.update_people(peopleName,
                                   {'identity': peopleIdentity, 'birthday_day': peopleBirthdayDay, 'birthday_month': peopleBirthdayMonth, 'birthday_year': peopleBirthdayYear})
             talbeid = cls.db.get_tableid_of_people(peopleName)
-            cls.update_my_table(talbeid, {'name_public_tender': publicTender})
+            cls.update_my_table(talbeid, {'name_public_tender': publicTender, 'course': course})
             cls.update_crawler(peopleName, 1)
 
         if specifc_concurso is None:
