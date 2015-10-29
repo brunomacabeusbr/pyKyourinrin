@@ -24,6 +24,7 @@ class Crawler:
         else:
             table = cls.name() + '_' + table
 
+        column_and_value = {i: j for i, j in column_and_value.items() if j is not None}
         Crawler.db.execute("INSERT INTO " + table + " (peopleid," + ','.join(column_and_value.keys()) + ") VALUES (?," + ('"' + '","'.join(list(map(str, column_and_value.values()))) + '"') + ")", (id,))
 
     # id deve ser, preferencialmente, o id da coluna da pessoa, ou então o nome dela
@@ -78,6 +79,13 @@ class GetDependencies:
         self.harvest = f.harvest
 
     def __call__(self, *args, **kwargs):
+        if not 'id' in kwargs:
+            # Necessário para casos como do Portal da Transparencia, em que pode-se tanto buscar infos de uma pessoa
+            # especificamente ou então coletar o site inteiro, bastando usar os parâmetros da função
+            self.harvest(*args, **kwargs)
+            Crawler.db.commit()
+            return
+
         people_id = kwargs['id']
         dict_dependencies = Crawler.db.get_dependencies(people_id, *self.dependencies)
 
@@ -96,3 +104,5 @@ class GetDependencies:
 for i in Crawler.__subclasses__():
     if i.dependencies() != '':
         i.harvest = GetDependencies(i)
+
+# todo: colocar o  db.commit() implicito para todos os casos

@@ -44,6 +44,9 @@ class ManagerDatabase:
     def commit(self):
         return self.con.commit()
 
+    def lastrowid(self):
+        return self.c.lastrowid
+
     def select_column_and_value(self, sql, parameters=()):
         execute = self.execute(sql, parameters)
         fetch = execute.fetchone()
@@ -59,9 +62,11 @@ class ManagerDatabase:
             id = self.execute("SELECT * FROM peoples WHERE name=?", (name,)).fetchone()[0]
             self.execute('INSERT INTO crawler (peopleid) VALUES (?)', (id,))
 
-    def update_people(self, name, column_and_value): # todo: por para usar outros dados além do nome, algo como um parâmetro opcional dizendo a coluna alvo, ficadando column_target='name'
+    def update_people(self, name, column_and_value=None): # todo: por para usar outros dados além do nome, algo como um parâmetro opcional dizendo a coluna alvo, ficadando column_target='name'
         self.new_people_if_not_exist(name)
-        self.execute("UPDATE peoples SET " + ','.join('{}="{}"'.format(key, val) for key, val in column_and_value.items()) + " WHERE name=?", (name,))
+        if not column_and_value is None:
+            column_and_value = {i: j for i, j in column_and_value.items() if j is not None}
+            self.execute("UPDATE peoples SET " + ','.join('{}="{}"'.format(key, val) for key, val in column_and_value.items()) + " WHERE name=?", (name,))
 
     def crawler_status(self, id):
         fieldnames = self.select_column_and_value('SELECT * FROM crawler WHERE peopleid=?', (id,))
