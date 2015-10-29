@@ -9,33 +9,40 @@ class GraphDependencies:
         self.graph = nx.DiGraph()
 
         list_crawler = Crawler.__subclasses__()
-        list_dates_base = [i.crop() for i in list_crawler if i.dependencies() == ''] # pegar todos os dados que não tem depedencias
-        list_dates_base = [x for xs in list_dates_base for x in xs] # remover das tuplas
 
-        ## definir cores por crawler
+        ###
+        # definir cores por crawler
+        # cada crawler tem uma cor única. a cor é usada na hora de desenhar o edge
+        import random
 
-        colors = {}
         colors_available = list(matplotlib.colors.cnames.keys())
 
-        x = 0
         for i in list_crawler:
-            colors[i] = colors_available[x]
-            x += 1
+            color_choice = random.choice(colors_available)
+            colors_available.remove(color_choice)
+            i.my_color = color_choice
 
-        ## criar node
+        ###
+        # criar node
+        # os nodes são todas as informações coletáveis
+        for current_crawler in list_crawler:
+            for current_crop in current_crawler.crop():
+                self.graph.add_node(current_crop)
 
-        for i in list_crawler:
-            for i2 in i.crop():
-                self.graph.add_node(i2)
+        ###
+        # crir edges da depedência para a info que colhe
+        # os edges é um crawler ligando uma info à outra info, na ordem dependence -> crop
+        for current_crawler in list_crawler:
+            crawler_infos = {'color': current_crawler.my_color, 'crawler': current_crawler, 'crawler_name': current_crawler.name()}
 
-        ## crir edges da depedência para a info que colhe
+            [self.graph.add_edge(current_dependence, current_crop, **crawler_infos)
+             for current_dependence in current_crawler.dependencies() for current_crop in current_crawler.crop()]
 
-        for i in list_crawler:
-            for i2 in i.dependencies():
-                for i3 in i.crop():
-                    self.graph.add_edge(i2, i3, color=colors[i], crawler=i, crawler_name=i.name())
-
-        ## para o draw: definir posições dos nodes
+        ###
+        # definir posições dos nodes
+        # isso só é necessário para desenhar o grafo
+        list_dates_base = [i.crop() for i in list_crawler if i.dependencies() == ''] # pegar todos as infos que podem ser alcançadas sem depedência
+        list_dates_base = [x for xs in list_dates_base for x in xs] # remover das tuplas
 
         pos = {}
 
