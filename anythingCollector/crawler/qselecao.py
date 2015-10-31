@@ -26,7 +26,7 @@ class CrawlerQSelecao(Crawler):
         return 'name', 'identity', 'birthday_day', 'birthday_month', 'birthday_year',
 
     # salva no banco todos dados de todos os candidatos de todos os concursos ou do concurso especificado
-    # todo: salvar no banco os cocnursos já lidos
+    # todo: salvar no banco os cocnursos já lidos, já isso precisará ser criada uma tabela especial, a tabela do anythingCollector com as configs dele
     @classmethod
     def harvest(cls, specifc_concurso=None):
         # retorna todos os id de candidatos de concursos
@@ -80,7 +80,7 @@ class CrawlerQSelecao(Crawler):
             regex_get_id_candidato_concurso = re.compile(r'idcandidatoconcurso=(\d+)')
             for i in range(26):
                 while True:
-                    peoples = phantom.execute_script("return $('#ctl00_ContentPlaceHolderPrincipal_grvConsulta tbody').eq(0).find('tr:not(:first):not(:last):not(:last)').find('a')")
+                    peoples = phantom.execute_script("return $('#ctl00_ContentPlaceHolderPrincipal_grvConsulta tbody tr').find('a')")
                     for i3 in peoples:
                         list_to_return.append(int(regex_get_id_candidato_concurso.search(i3.get_attribute('href')).group(1)))
 
@@ -125,8 +125,6 @@ class CrawlerQSelecao(Crawler):
                 # há casos a serem lidados como em http://qselecao.ifce.edu.br/cartao_identificacao_dinamico.aspx?idcandidatoconcurso=328680&etapa=1
                 cls.db.update_people(peopleName, {'identity': peopleIdentity})
 
-            cls.db.update_people(peopleName,
-                                  {'identity': peopleIdentity, 'birthday_day': peopleBirthdayDay, 'birthday_month': peopleBirthdayMonth, 'birthday_year': peopleBirthdayYear})
             talbeid = cls.db.get_tableid_of_people(peopleName)
             cls.update_my_table(talbeid, {'name_public_tender': publicTender, 'course': course})
             cls.update_crawler(peopleName, 1)
