@@ -33,10 +33,22 @@ class GraphDependencies:
         # crir edges da depedência para a info que colhe
         # os edges é um crawler ligando uma info à outra info, na ordem dependence -> crop
         for current_crawler in list_crawler:
+            if len(current_crawler.dependencies()) == 0:
+                continue
+
             crawler_infos = {'color': current_crawler.my_color, 'crawler': current_crawler, 'crawler_name': current_crawler.name()}
 
+            dependencies = []
+            if type(current_crawler.dependencies()[0]) == tuple:
+                for i2 in current_crawler.dependencies():
+                    for i3 in i2:
+                        if i3 not in dependencies:
+                            dependencies.append(i3)
+            else:
+                dependencies = current_crawler.dependencies()
+
             [self.graph.add_edge(current_dependence, current_crop, **crawler_infos)
-             for current_dependence in current_crawler.dependencies() for current_crop in current_crawler.crop()]
+             for current_dependence in dependencies for current_crop in current_crawler.crop()]
 
         ###
         # definir posições dos nodes
@@ -123,6 +135,9 @@ class GraphDependenciesOfThisPeople:
         # marcar nodes com dados já obtidos
         people_status = self.db.get_people_info_all(self.id)
         for k, v in people_status.items():
+            if k not in self.gd.graph.node:
+                continue
+
             if v != None:
                 self.gd.graph.node[k]['node_color'] = 'blue'
             else:
@@ -142,6 +157,18 @@ class GraphDependenciesOfThisPeople:
         # todo: em edge_labels, preciso separar por vírgula caso haja dois ou mais crawlers que levem para a mesma info
         plt.savefig("graph.png")
         plt.show()
+
+    def is_depedence_reachable(self, target, exclude_crawler=None):
+        if exclude_crawler is None:
+            return len(self.gd.graph.in_edges(target)) != 0
+
+        for i in self.gd.graph.in_edges(target):
+            if self.gd.graph.get_edge_data(*i)['crawler'].name() == exclude_crawler:
+                continue
+
+            return True
+
+        return False
 
     def harvest_dependence(self, target):
         # buscar os crawlers que levam ao node target

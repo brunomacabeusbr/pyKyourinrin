@@ -39,13 +39,12 @@ class CrawlerPortalTransparencia(Crawler):
 
     @staticmethod
     def dependencies():
-        # todo: depende do nome ou então do cpf, mas mesmo assim da para colher informações
-        return 'name',
+        return ('cpf',), ('name',),
 
     @staticmethod
     def crop():
-        # todo: preciso aumentar o grau de abstração para dizer que está colhendo parte do cpf
-        return 'cpf',
+        # todo: retorna o cpf, porém, parcial. Preciso aumentar o grau de abstração para dizer que está colhendo parte do cpf
+        return '',
 
     @classmethod
     def harvest(cls, id=None, dependencies=None, specific_name=None, specific_site_id=None):
@@ -117,8 +116,11 @@ class CrawlerPortalTransparencia(Crawler):
                 raise ValueError("Condição não especificada antes")
         else:
             # Se for especificado o id da pessoa na tabela, usará as informações já coletadas no decorator GetDependencies
-            # todo: pode-se usar o nome ou então o cpf
-            list_id = get_id_specific(dependencies['name'])
+            if 'name' in dependencies:
+                query = dependencies['name']
+            else:
+                query = dependencies['cpf']
+            list_id = get_id_specific(query)
 
         for current_id in list_id:
             phantom.get('http://www.portaltransparencia.gov.br/servidores/Servidor-DetalhaServidor.asp?IdServidor=' + str(current_id))

@@ -72,14 +72,21 @@ from graphdependencies import GraphDependenciesOfThisPeople
 
 # Decorator implícito, colocado nos métodos harvest dos crawlers que possuem depedências,
 # para pega-las do banco de dados e colocar no dict 'dependencies' da chamada do método
-# todo: precisa implementar ainda um "ou exclussivo", para casos como o da etufor que pede data de nascimento *ou* cia
 class GetDependencies:
     def __init__(self, f):
-        self.dependencies = f.dependencies()
+        self.name = f.name()
         self.harvest = f.harvest
+        self.dependencies = f.dependencies()
+        self.multiple_dependence_routes = (type(self.dependencies[0]) == tuple)
 
+    # todo: Em um raro caso pode ocasionar um loop infinito
+    # Para esse caso acontecer, o crawler A precisa da info X, da qual não está presente no banco.
+    # Então o método harvest_dependence será chamado para coletar a info X, da qual pode ser alcançada usando o cralwer B
+    # Porém, uma depedência de B não presente no banco é a info Y, da qual pode ser coletada através do crawler A.
+    # Esse raro caso resultada num loop infinito A -> B -> A -> B ...
     def __call__(self, *args, **kwargs):
-        if not 'id' in kwargs:
+        # Caso não seja usado um id do banco de dados, prosseguirá normalmente para a função harvest do crawler
+        if 'id' not in kwargs:
             # Necessário para casos como do Portal da Transparencia, em que pode-se tanto buscar infos de uma pessoa
             # especificamente ou então coletar o site inteiro, bastando usar os parâmetros da função
             self.harvest(*args, **kwargs)
@@ -87,13 +94,46 @@ class GetDependencies:
             return
 
         people_id = kwargs['id']
-        dict_dependencies = Crawler.db.get_dependencies(people_id, *self.dependencies)
+
+        gdp = GraphDependenciesOfThisPeople(Crawler.db, people_id)
+
+        if self.multiple_dependence_routes:
+            # Se houver várias rotas de depedência, seguirá o seguinte algorítimo:
+            # 1 - Se uma das rotas já tiver todos os dados presentes no banco, irá usa-la
+            # 2 - Se uma das rotas tem dados não alcançáveis, não a usará
+            # 3 - Prioriza a rota com menos depedências
+            dict_dependencies = None
+            for i in self.dependencies:
+                current_dict_dependencies = Crawler.db.get_dependencies(people_id, *i)
+                if None not in current_dict_dependencies.values():
+                    dict_dependencies = current_dict_dependencies
+                    break
+
+                use_it = True
+                for k, v in current_dict_dependencies.items():
+                    if v is not None:
+                        continue
+
+                    if gdp.is_depedence_reachable(k, exclude_crawler=self.name) is False:
+                        use_it = False
+                        break
+
+                if use_it is False:
+                    continue
+
+                if dict_dependencies is not None and len(dict_dependencies) > len(current_dict_dependencies):
+                    dict_dependencies = current_dict_dependencies
+
+                if dict_dependencies is None:
+                    dict_dependencies = current_dict_dependencies
+        else:
+            dict_dependencies = Crawler.db.get_dependencies(people_id, *self.dependencies)
 
         # Verificar se alguma dependência não está presente no banco
         # Se não estiver, então vai colhe-la e chamar novamente esse mesmo método
         for dependence_name, dependence_value in dict_dependencies.items():
             if dependence_value is None:
-                GraphDependenciesOfThisPeople(Crawler.db, people_id).harvest_dependence(dependence_name)
+                gdp.harvest_dependence(dependence_name)
                 self.__call__(*args, **kwargs)
                 return
 
