@@ -129,9 +129,9 @@ class CrawlerPortalTransparencia(Crawler):
             people_name, people_cpf, people_federal_employee_type =\
                 [i.get_attribute('innerHTML').strip() for i in phantom.execute_script('return $(\'[summary="Identificação do Servidor"] tr:not(:first) .colunaValor\')')]
 
-            cls.db.update_people(people_name) # todo: precisa lidar com o caso do cpf ser parcial
-            #cls.db.update_people(people_name, {'cpf': people_cpf})
-            tableid = cls.db.get_tableid_of_people(people_name)
+            cls.db.update_people({'name': people_name}) # todo: precisa lidar com o caso do cpf ser parcial
+            #cls.db.update_people({'name': people_name}, {'cpf': people_cpf})
+            tableid = cls.db.get_tableid_of_people({'name': people_name})
 
             # Infos do emprego
             jobs_infos = phantom.execute_script(

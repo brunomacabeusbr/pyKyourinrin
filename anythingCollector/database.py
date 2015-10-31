@@ -56,17 +56,31 @@ class ManagerDatabase:
 
         return {k[0]: v for k, v in list(zip(execute.description, fetch))}
 
-    def new_people_if_not_exist(self, name): # todo: por para usar outros dados além do nome, algo como um parâmetro opcional dizendo a coluna alvo, ficadando column_target='name'
-        if len(self.execute("SELECT * FROM peoples WHERE name=?", (name,)).fetchall()) == 0:
-            self.execute('INSERT INTO peoples (name) VALUES (?)', (name,))
-            id = self.execute("SELECT * FROM peoples WHERE name=?", (name,)).fetchone()[0]
-            self.execute('INSERT INTO crawler (peopleid) VALUES (?)', (id,))
+    def count_people_with_this_filters(self, filter):
+        # todo: só filtra com base nos dados da tabela peoples
+        return len(self.execute("SELECT * FROM peoples WHERE %s" %
+                                ' AND '.join("{}='{}'".format(k, v) for k, v in filter.items())).fetchall())
 
-    def update_people(self, name, column_and_value=None): # todo: por para usar outros dados além do nome, algo como um parâmetro opcional dizendo a coluna alvo, ficadando column_target='name'
-        self.new_people_if_not_exist(name)
-        if not column_and_value is None:
+    def people_exists(self, filter):
+        return self.count_people_with_this_filters(filter) > 0
+
+    def new_people(self, filter):
+        filter = {k: '"' + str(v) + '"' for k, v in filter.items()}
+        self.execute('INSERT INTO peoples (' + ','.join(filter.keys()) + ') VALUES (' + ','.join(filter.values()) + ')')
+        self.execute('INSERT INTO crawler (peopleid) VALUES (?)', (self.lastrowid(),))
+
+    def update_people(self, filter, column_and_value=None):
+        count_people = self.count_people_with_this_filters(filter)
+        if count_people == 0:
+            self.new_people(filter)
+        elif count_people > 1:
+            raise ValueError('Há mais que uma pessoa com os critérios fornecidos! Não sei qual eu devo atualizar')
+
+        if column_and_value is not None:
             column_and_value = {i: j for i, j in column_and_value.items() if j is not None}
-            self.execute("UPDATE peoples SET " + ','.join('{}="{}"'.format(key, val) for key, val in column_and_value.items()) + " WHERE name=?", (name,))
+
+            self.execute("UPDATE peoples SET " + ','.join('{}="{}"'.format(key, val) for key, val in column_and_value.items()) + ' WHERE %s ' %
+                         ' AND '.join("{}='{}'".format(k, v) for k, v in filter.items()))
 
     def crawler_status(self, id):
         fieldnames = self.select_column_and_value('SELECT * FROM crawler WHERE peopleid=?', (id,))
@@ -88,5 +102,12 @@ class ManagerDatabase:
     def get_dependencies(self, id, *dependencies):
         return {k: v for k, v in self.get_people_info_all(id).items() if k in dependencies}
 
-    def get_tableid_of_people(self, name): # todo: por para usar outros dados além do nome, algo como um parâmetro opcional dizendo a coluna alvo, ficadando column_target='name'
-        return self.execute("SELECT * FROM peoples WHERE name=?", (name,)).fetchone()[0]
+    def get_tableid_of_people(self, filter):
+        count_people = self.count_people_with_this_filters(filter)
+        if count_people == 0:
+            return False
+        elif count_people > 1:
+            raise ValueError('Há mais que uma pessoa com os critérios fornecidos! Não sei qual eu devo entregar o ID')
+
+        return self.execute("SELECT * FROM peoples WHERE %s" %
+                                ' AND '.join("{}='{}'".format(k, v) for k, v in filter.items())).fetchone()[0]

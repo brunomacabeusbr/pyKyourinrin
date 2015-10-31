@@ -119,13 +119,13 @@ class CrawlerQSelecao(Crawler):
             peopleBirthdayDay, peopleBirthdayMonth, peopleBirthdayYear = regexBirthday.search(r.text).groups()
             peopleIdentity = re.sub('[^\d]+', '', regexIdentity.search(r.text).group(1))
 
-            cls.db.update_people(peopleName,
+            cls.db.update_people({'name': peopleName},
                                   {'birthday_day': peopleBirthdayDay, 'birthday_month': peopleBirthdayMonth, 'birthday_year': peopleBirthdayYear})
             if peopleIdentity.isdecimal():
                 # há casos a serem lidados como em http://qselecao.ifce.edu.br/cartao_identificacao_dinamico.aspx?idcandidatoconcurso=328680&etapa=1
-                cls.db.update_people(peopleName, {'identity': peopleIdentity})
+                cls.db.update_people({'name': peopleName}, {'identity': peopleIdentity})
 
-            talbeid = cls.db.get_tableid_of_people(peopleName)
+            talbeid = cls.db.get_tableid_of_people({'name': peopleName})
             cls.update_my_table(talbeid, {'name_public_tender': publicTender, 'course': course})
             cls.update_crawler(peopleName, 1)
 

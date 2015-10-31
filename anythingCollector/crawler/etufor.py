@@ -61,7 +61,7 @@ class CrawlerEtufor(Crawler):
             return
 
         cls.update_crawler(id, 1)
-        cls.db.update_people(dependencies['name'], {'name_social': get_text_in_table(9)})
+        cls.db.update_people({'name': dependencies['name']}, {'name_social': get_text_in_table(9)})
         cls.update_my_table(id, {'cia': get_text_in_table(6)})
 
         try:
@@ -73,7 +73,7 @@ class CrawlerEtufor(Crawler):
             # não há mais dados a serem colhidos
             return
 
-        cls.db.update_people(dependencies['name'], {'name_monther': get_text_in_table(16)})
+        cls.db.update_people({'name': dependencies['name']}, {'name_monther': get_text_in_table(16)})
 
         regexp_date = re.compile(r'(\d+)\/(\d+)\/(\d+)\s(\d+):(\d+):(\d+)')
         pos = 37

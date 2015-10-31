@@ -46,7 +46,7 @@ class CrawlerSspds(Crawler):
             document, peopleCpf, peopleAntecedentes = regexAntecedentes.search(contents).groups()
 
             if document == 'CPF':
-                cls.db.update_people(dependencies['name'], {'cpf': peopleCpf})
+                cls.db.update_people({'name': dependencies['name']}, {'cpf': peopleCpf})
 
             cls.update_my_table(id, {'registrocriminal': peopleAntecedentes})
             cls.update_crawler(id, 1)
