@@ -31,19 +31,23 @@ class CrawlerEtufor(Crawler):
 
     @staticmethod
     def dependencies():
-        return 'name', 'birthday_day', 'birthday_month', 'birthday_year',
+        return ('name', 'birthday_day', 'birthday_month', 'birthday_year'), ('cia',),
 
     @staticmethod
     def crop():
-        return 'name_social', 'cia', 'name_monther',
+        return 'name_social', 'cia', 'name', 'name_monther', 'birthday_day', 'birthday_month', 'birthday_year'
 
     @classmethod
     def harvest(cls, id=None, dependencies=None):
         phantom = webdriver.PhantomJS()
 
         phantom.get('http://www.fortaleza.ce.gov.br/etuforComponents/CarteiradeEstudantes/consultaSolicitacao.php')
-        form_consultation = phantom.find_element_by_name('Nome')
-        form_consultation.send_keys(dependencies['name'] + Keys.TAB + '{:02}'.format(dependencies['birthday_day']) + '{:02}'.format(dependencies['birthday_month']) + '{:02}'.format(dependencies['birthday_year']))
+        if 'cia' in dependencies:
+            form_consultation = phantom.find_element_by_name('CIA')
+            form_consultation.send_keys(dependencies['cia'])
+        else:
+            form_consultation = phantom.find_element_by_name('Nome')
+            form_consultation.send_keys(dependencies['name'] + Keys.TAB + '{:02}'.format(dependencies['birthday_day']) + '{:02}'.format(dependencies['birthday_month']) + '{:02}'.format(dependencies['birthday_year']))
         phantom.find_element_by_name('btnpesq').click()
 
         def count_total_box_table():
@@ -61,7 +65,11 @@ class CrawlerEtufor(Crawler):
             return
 
         cls.update_crawler(id, 1)
-        cls.db.update_people({'name': dependencies['name']}, {'name_social': get_text_in_table(9)})
+
+        regexp_date = re.compile(r'(\d+)\/(\d+)\/(\d+)')
+        birthday_day, birthday_month, birthday_year = regexp_date.search(get_text_in_table(10)).groups()
+        cls.db.update_people({'id': id},
+                             {'name_social': get_text_in_table(9), 'birthday_day': birthday_day, 'birthday_month': birthday_month, 'birthday_year': birthday_year})
         cls.update_my_table(id, {'cia': get_text_in_table(6)})
 
         try:
@@ -73,9 +81,9 @@ class CrawlerEtufor(Crawler):
             # não há mais dados a serem colhidos
             return
 
-        cls.db.update_people({'name': dependencies['name']}, {'name_monther': get_text_in_table(16)})
+        cls.db.update_people({'id': id}, {'name_monther': get_text_in_table(16)})
 
-        regexp_date = re.compile(r'(\d+)\/(\d+)\/(\d+)\s(\d+):(\d+):(\d+)')
+        regexp_timestamp = re.compile(r'(\d+)\/(\d+)\/(\d+)\s(\d+):(\d+):(\d+)')
         pos = 37
         while True:
             if get_text_in_table(pos) == '_______ HISTÓRICO DE ETAPAS DO PROCESSO \n\t\t\t\t\t\t\tATUAL&nbsp;_______':
@@ -84,7 +92,7 @@ class CrawlerEtufor(Crawler):
                 get_text_in_table(pos), get_text_in_table(pos + 2), get_text_in_table(pos + 3), get_text_in_table(pos + 8), get_text_in_table(pos + 4)
 
             timestamp_day, timestamp_month, timestamp_year, timestamp_hour, timestamp_minute, timestamp_second =\
-                regexp_date.search(timestamp).groups()
+                regexp_timestamp.search(timestamp).groups()
             timestamp_iso = str(datetime.datetime(int(timestamp_year), int(timestamp_month), int(timestamp_day), int(timestamp_hour), int(timestamp_minute), int(timestamp_second)))
 
             cls.update_my_table(id, {'timestamp': timestamp_iso, 'school': school, 'type': school_type, 'course': course, 'turn': turn}, table='records_school')
