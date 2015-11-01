@@ -142,6 +142,7 @@ class GetDependencies:
 import functools
 
 
+# De forma implícita, sempre será commitada as alterações ao banco de dados ao finalizar a colheita
 def harvest_and_commit(harvest_fun, *args, **kwargs):
     harvest_fun(*args, **kwargs)
     Crawler.db.commit()
