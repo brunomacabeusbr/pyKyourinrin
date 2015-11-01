@@ -120,50 +120,47 @@ class GraphDependenciesOfThisPeople:
     def __init__(self, db, id):
         self.id = id
         self.db = db
-        self.gd = gd
+        self.gd = gd.graph.copy()
         self.pos_invert = gd.pos_invert
 
-        # apagar edges de crawlers em que não se obteve sucesso ao tentar usar
-        crawler_status = self.db.crawler_status(self.id)
-        for k, v in crawler_status.items():
-            if v == -1:
-                for i in self.gd.graph.edges():
-                    edge_crawler = self.gd.graph.get_edge_data(*i)['crawler']
-                    if edge_crawler == k:
-                        self.gd.graph.remove_edge(*i)
+        ###
+        # apagar edges de crawlers já usados
+        crawler_list_used = self.db.crawler_list_used(self.id)
+        for k in crawler_list_used.keys():
+            [self.gd.remove_edge(*i) for i in self.gd.edges()
+             if self.gd.get_edge_data(*i)['crawler'].name() == k]
 
+        ###
         # marcar nodes com dados já obtidos
         people_status = self.db.get_people_info_all(self.id)
         for k, v in people_status.items():
-            if k not in self.gd.graph.node:
+            if k not in self.gd.node:
                 continue
 
-            if v != None:
-                self.gd.graph.node[k]['node_color'] = 'blue'
+            if v is not None:
+                self.gd.node[k]['node_color'] = 'blue'
             else:
-                self.gd.graph.node[k]['node_color'] = 'black'
-
-        #self.draw()
+                self.gd.node[k]['node_color'] = 'black'
 
     def draw(self):
-        edges, colors = zip(*nx.get_edge_attributes(self.gd.graph, 'color').items())
-        nodes, node_color = zip(*nx.get_node_attributes(self.gd.graph, 'node_color').items())
+        edges, colors = zip(*nx.get_edge_attributes(self.gd, 'color').items())
+        nodes, node_color = zip(*nx.get_node_attributes(self.gd, 'node_color').items())
 
-        nx.draw(self.gd.graph, pos=self.pos_invert, with_labels=True,
+        nx.draw(self.gd, pos=self.pos_invert, with_labels=True,
                 font_size=10, font_color='r',
                 nodelist=nodes, node_color=node_color, node_size=1000,
                 edgelist=edges, edge_color=colors)
-        nx.draw_networkx_edge_labels(self.gd.graph, pos=self.pos_invert, edge_labels=nx.get_edge_attributes(self.gd.graph, 'crawler_name'), label_pos=0.85, font_size=8)
+        nx.draw_networkx_edge_labels(self.gd, pos=self.pos_invert, edge_labels=nx.get_edge_attributes(self.gd, 'crawler_name'), label_pos=0.85, font_size=8)
         # todo: em edge_labels, preciso separar por vírgula caso haja dois ou mais crawlers que levem para a mesma info
-        plt.savefig("graph.png")
+        plt.savefig("graph_people.png")
         plt.show()
 
     def is_depedence_reachable(self, target, exclude_crawler=None):
         if exclude_crawler is None:
-            return len(self.gd.graph.in_edges(target)) != 0
+            return len(self.gd.in_edges(target)) != 0
 
-        for i in self.gd.graph.in_edges(target):
-            if self.gd.graph.get_edge_data(*i)['crawler'].name() == exclude_crawler:
+        for i in self.gd.in_edges(target):
+            if self.gd.get_edge_data(*i)['crawler'].name() == exclude_crawler:
                 continue
 
             return True
@@ -173,8 +170,8 @@ class GraphDependenciesOfThisPeople:
     def harvest_dependence(self, target):
         # buscar os crawlers que levam ao node target
         crawlers_to_target = []
-        for i in self.gd.graph.in_edges(target):
-            edge_crawler = self.gd.graph.get_edge_data(*i)['crawler']
+        for i in self.gd.in_edges(target):
+            edge_crawler = self.gd.get_edge_data(*i)['crawler']
             if not edge_crawler in crawlers_to_target:
                 crawlers_to_target.append(edge_crawler)
 

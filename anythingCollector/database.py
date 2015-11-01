@@ -82,10 +82,13 @@ class ManagerDatabase:
             self.execute("UPDATE peoples SET " + ','.join('{}="{}"'.format(key, val) for key, val in column_and_value.items()) + ' WHERE %s ' %
                          ' AND '.join("{}='{}'".format(k, v) for k, v in filter.items()))
 
-    def crawler_status(self, id):
+    def crawler_list_status(self, id):
         fieldnames = self.select_column_and_value('SELECT * FROM crawler WHERE peopleid=?', (id,))
         del fieldnames['peopleid']
         return fieldnames
+
+    def crawler_list_used(self, id):
+        return {k: v for k, v in self.crawler_list_status(id).items() if v != 0}
 
     def get_people_info_all(self, id):
         fieldnames = self.select_column_and_value("SELECT * FROM peoples WHERE id=?", (id,))
