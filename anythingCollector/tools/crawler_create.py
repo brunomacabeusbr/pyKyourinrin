@@ -2,7 +2,7 @@ import sys
 import os
 
 my_path = os.path.dirname(os.path.realpath(__file__))
-crawler_folder = my_path + '/crawler/'
+crawler_folder = my_path + '/../crawler/'
 crawler_name_array = sys.argv[1:]
 crawler_name_underscore = '_'.join(crawler_name_array)
 crawler_name_camel_case = ''.join(i.title() for i in crawler_name_array)
