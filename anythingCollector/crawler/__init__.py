@@ -138,11 +138,16 @@ class GetDependencies:
                 return
 
         self.harvest(*args, dependencies=dict_dependencies, **kwargs)
-        Crawler.db.commit()
 
+import functools
+
+
+def harvest_and_commit(harvest_fun, *args, **kwargs):
+    harvest_fun(*args, **kwargs)
+    Crawler.db.commit()
 
 for i in Crawler.__subclasses__():
     if i.dependencies() != '':
-        i.harvest = GetDependencies(i)
-
-# todo: colocar o  db.commit() implicito para todos os casos
+        i.harvest = functools.partial(harvest_and_commit, GetDependencies(i))
+    else:
+        i.harvest = functools.partial(harvest_and_commit, i.harvest)
