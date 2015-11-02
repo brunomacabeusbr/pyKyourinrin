@@ -109,7 +109,7 @@ class CrawlerPortalTransparencia(Crawler):
             elif specific_siteid is not None:
                 # Se tiver sido fornecido o id no site, checará apenas ele
                 # todo: talvez seja bom verificar se o siteid é válido
-                list_peoples = [specific_siteid]
+                list_peoples = [{'siteid': specific_siteid}]
             else:
                 raise ValueError("Condição não especificada antes")
         else:
@@ -151,34 +151,51 @@ class CrawlerPortalTransparencia(Crawler):
                 """
                   // Nessa hash fica a "tradução" dos dados das colunas da variável want,
                   // do nome da coluna presente no Portal da Transparência com o nome da coluna a ser salva no banco de dados do crawler
-                  var translate = {'Cargo Emprego': 'job', 'Órgão': 'workplace', 'Jornada de Trabalho': 'working_hours'};
+                  var translate = {'Cargo Emprego': 'job', 'Posto/Graduação': 'job',
+                                    'Órgão': 'workplace',
+                                    'Jornada de Trabalho': 'working_hours'};
 
                   function get_infos(panel_target) {
                     // Deve-se definir nessa array os dados que deseja obter
                     // Caso o dado desejado seja um sub-item, deve-se usar array com os nomes dos itens até chegar a ele
-                    var want = ['Cargo Emprego', ['Local de Exercício - Localização', 'Órgão'], 'Jornada de Trabalho'];
+                    var want = ['Cargo Emprego',
+                                'Posto/Graduação',
+                                ['Local de Exercício - Localização', 'Órgão'],
+                                ['Posto/Graduação', 'Órgão'],
+                                'Jornada de Trabalho'];
 
-                    // Retorna se esse a coluna dada tem um dado desejado ou não
-                    // Lida com os dados desejado em sub-itens
-                    function check_if_want_this_columns(column_key) {
-                      for (var i in want) {
-                        if (typeof(want[i]) == 'string') {
-                          if (column_key == want[i]) {
-                            want.splice(i, 1);
-                            return true
-                          }
-                        } else if (typeof(want[i]) == 'object') {
-                          if (column_key == want[i][0]) {
-                            want[i].splice(0, 1);
-                            if (want[i].length == 1) {
-                              want[i] = want[i][0];
-                              return false
+                    // Trabalhar na análise da coluna
+                    function work_at_column(column_key) {
+                      // Lida com os dados desejado em sub-itens
+                      function update_subsection(column_key) {
+                        for (var i in want) {
+                          if (typeof(want[i]) == 'object') {
+                            if (column_key == want[i][0]) {
+                              want[i].splice(0, 1);
+                              if (want[i].length == 1) {
+                                want[i] = want[i][0];
+                              }
                             }
                           }
                         }
                       }
 
-                      return false
+                      // Retorna se esse a coluna dada tem um dado desejado ou não
+                      function check_if_want_this_columns(column_key) {
+                        for (var i in want) {
+                          if (typeof(want[i]) == 'string') {
+                            if (column_key == want[i]) {
+                              want.splice(i, 1);
+                              return true
+                            }
+                          }
+                        }
+
+                        return false
+                      }
+
+                      update_subsection(column_key);
+                      return check_if_want_this_columns(column_key);
                     }
 
                     // Fazer parser em cada linha da tabela de informações da pessoa e vai armazenando o resultado na hash to_return
@@ -189,7 +206,7 @@ class CrawlerPortalTransparencia(Crawler):
                         current_column = current_column.slice(0, -1);
                       }
 
-                      if (check_if_want_this_columns(current_column)) {
+                      if (work_at_column(current_column)) {
                         to_return[translate[current_column]] = $(v).find('td')[1].innerText;
                       }
                     });
