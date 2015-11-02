@@ -47,22 +47,22 @@ class CrawlerPortalTransparencia(Crawler):
         return '',
 
     @classmethod
-    def harvest(cls, id=None, dependencies=None, specific_name=None, specific_site_id=None):
+    def harvest(cls, id=None, dependencies=None, specific_name=None, specific_siteid=None):
         phantom = webdriver.PhantomJS()
 
-        # retorna o id no site da(s) pessoa(s) com a query específica
-        # a query pode ser tanto o nome (parcial ou não) ou o cpf (apenas completo)
+        # retorna o siteid da(s) pessoa(s) com a query específica
+        # a query pode ser tanto o nome (parcial ou não), o cpf (apenas completo) ou None
         # lembrando que se usar o nome "José da Silva" retornará todos que tenham "José da Silva" no nome
-        def get_id_specific(query):
+        def get_siteid_specific(query):
             phantom.get('http://www.portaltransparencia.gov.br/servidores/Servidor-ListaServidores.asp')
-
-            phantom.save_screenshot('moment1.bmp')
 
             if query is not None:
                 phantom.find_element_by_id('Pesquisa').send_keys(query)
                 phantom.find_element_by_css_selector('#pesquisaListagem [type="submit"]').click()
 
-            phantom.save_screenshot('moment2.bmp')
+                text = phantom.execute_script('return $(\'[summary="Lista de Servidores"] td:first\').text()')
+                if text[:31] == 'Não foram encontrados registros':
+                    return []
 
             regexp_total_pages = re.compile(r'(\d+)$')
             total_pages = int(regexp_total_pages.search(
@@ -70,13 +70,12 @@ class CrawlerPortalTransparencia(Crawler):
             ).group(1))
 
             list_to_return = []
-            #for i in range(0, total_pages):
-            for i in range(0, 5):
-                phantom.save_screenshot(str(i) + '.bmp')
-                link_peoples = phantom.find_elements_by_css_selector('[summary="Lista de Servidores"] tr:not(:first-child) a')
-                id_servidor = [i2.get_attribute('href')[-7:] for i2 in link_peoples]
 
-                list_to_return.extend(id_servidor)
+            for i in range(0, total_pages):
+                peoples = phantom.find_elements_by_css_selector('[summary="Lista de Servidores"] tr:not(:first-child)')
+                for i2 in peoples:
+                    list_to_return.append({'siteid': i2.find_element_by_tag_name('a').get_attribute('href')[-7:],
+                                           'name': i2.find_element_by_tag_name('a').get_attribute('innerHTML').strip().title()})
 
                 if i + 1 != total_pages:
                     if i == 0:
@@ -88,30 +87,29 @@ class CrawlerPortalTransparencia(Crawler):
 
             return list_to_return
 
-        # listar todos os ids de servidores servidores do site
-        def get_id_all():
-            return get_id_specific(None)
+        # listar todos os siteids de servidores
+        def get_siteid_all():
+            return get_siteid_specific(None)
 
         # se fornecer o id no banco de dados da pessoa, vai puxar depedencia e tentar buscar pelo CPF ou Nome e então coletar os dados
         # se nao fornecer id, não vai puxar depedencias e vai coletar o Portal da Transparencia inteiro
-        # todo: melhorar os nomes! confunde muito a ambiguidade do "id" para o banco de dados ou do site
-        if (specific_name is not None) and (specific_site_id is not None):
-            raise ValueError("Só forneça um dos dois: ou o nome a ser buscando ou o ID no site")
+        if (specific_name is not None) and (specific_siteid is not None):
+            raise ValueError("Só forneça um dos dois: ou o nome a ser buscando ou o siteid")
 
-        if (id is not None) and ((specific_name is not None) or (specific_site_id is not None)):
-            raise ValueError("Não forneça o id no banco de dados junto do nome a ser buscado ou o ID no site")
+        if (id is not None) and ((specific_name is not None) or (specific_siteid is not None)):
+            raise ValueError("Não forneça o id no banco de dados junto do nome a ser buscado ou o siteid")
 
         if id is None:
-            if (specific_name is None) and (specific_site_id is None):
+            if (specific_name is None) and (specific_siteid is None):
                 # Se nada for especificado, recolherá todo o site
-                list_id = get_id_all()
+                list_peoples = get_siteid_all()
             elif specific_name is not None:
                 # Se tiver sido fornecido o nome a ser buscado, usará na busca
-                list_id = get_id_specific(specific_name)
-            elif specific_site_id is not None:
+                list_peoples = get_siteid_specific(specific_name)
+            elif specific_siteid is not None:
                 # Se tiver sido fornecido o id no site, checará apenas ele
-                # todo: talvez seja bom verificar se o ID é válido
-                list_id = [specific_site_id]
+                # todo: talvez seja bom verificar se o siteid é válido
+                list_peoples = [specific_siteid]
             else:
                 raise ValueError("Condição não especificada antes")
         else:
@@ -120,14 +118,29 @@ class CrawlerPortalTransparencia(Crawler):
                 query = dependencies['name']
             else:
                 query = dependencies['cpf']
-            list_id = get_id_specific(query)
+            list_peoples = get_siteid_specific(query)
 
-        for current_id in list_id:
-            phantom.get('http://www.portaltransparencia.gov.br/servidores/Servidor-DetalhaServidor.asp?IdServidor=' + str(current_id))
+            # Nós queremos apenas a pessoa da query especificada, e mais nenhuma além
+            # Em alguns casos, se pesquisar pelo nome, pode vim outras pessoas da qual não estamos interessados, como, por exemplo,
+            # se pesquisar por "Francisco José da Silva", pode vim "Francisco José da Costa e Silva", mas não queremos este último
+            if 'name' in dependencies:
+                list_peoples = [{'siteid': i['siteid'], 'name': i['name']} for i in list_peoples
+                                if i['name'] == dependencies['name']]
+
+            # Se tiver retornado nada, é porque essa pessoa especificada não está presente no Portal da Transparencia
+            if len(list_peoples) == 0:
+                cls.update_crawler(id, -1)
+                return
+
+        list_peoples = [i['siteid'] for i in list_peoples]
+        for current_siteid in list_peoples:
+            phantom.get('http://www.portaltransparencia.gov.br/servidores/Servidor-DetalhaServidor.asp?IdServidor=' + str(current_siteid))
 
             # Infos básicas
             people_name, people_cpf, people_federal_employee_type =\
                 [i.get_attribute('innerHTML').strip() for i in phantom.execute_script('return $(\'[summary="Identificação do Servidor"] tr:not(:first) .colunaValor\')')]
+
+            people_name = people_name.title()
 
             cls.db.update_people({'name': people_name}) # todo: precisa lidar com o caso do cpf ser parcial
             #cls.db.update_people({'name': people_name}, {'cpf': people_cpf})
@@ -208,7 +221,7 @@ class CrawlerPortalTransparencia(Crawler):
                                          'job': i['job'], 'workplace': i['workplace'], 'working_hours': i['working_hours']})
 
             # Infos salariais
-            phantom.get('http://www.portaltransparencia.gov.br/servidores/Servidor-DetalhaRemuneracao.asp?Op=1&bInformacaoFinanceira=True&IdServidor=' + str(current_id))
+            phantom.get('http://www.portaltransparencia.gov.br/servidores/Servidor-DetalhaRemuneracao.asp?Op=1&bInformacaoFinanceira=True&IdServidor=' + str(current_siteid))
 
             regexp_date = re.compile(r'(\w+) de (\d+)$')
             total_dates = len(phantom.find_elements_by_css_selector('#navegacaomeses a'))
