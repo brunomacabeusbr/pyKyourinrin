@@ -155,7 +155,7 @@ class GraphDependenciesOfThisPeople:
         plt.savefig("graph_people.png")
         plt.show()
 
-    def is_depedence_reachable(self, target, exclude_crawler=None):
+    def is_dependence_reachable(self, target, exclude_crawler=None):
         if exclude_crawler is None:
             return len(self.gd.in_edges(target)) != 0
 
@@ -182,8 +182,18 @@ class GraphDependenciesOfThisPeople:
         # será chamado novamente esse mesmo código
 
         for i in crawlers_to_target:
-            i.harvest(id=self.id) # todo: tomar cuidado com os crawlers base, da qual não possuem o parâmetro "id"
-            # todo: parar esse loop caso haja sucesso em pegar a depedência
+            i.harvest(id=self.id)
+            # todo: tomar cuidado com os crawlers base, da qual não possuem o parâmetro "id", preciso verificar se tem ou não id no harvest para executar isso aqui
+
+            # Conseguiu colher o dado desejado? Se sim, para o loop
+            if self.db.get_dependencies(self.id, target)[target] is not None:
+                break
+
+        # Retornar se teve sucesso em recolher a depedência desejada
+        if self.db.get_dependencies(self.id, target)[target] is not None:
+            return True
+        else:
+            return False
 
         # TODO: chamar os crawlers da lista crawlers_to_target com thread e, assim que o target for alcançado,
         # parar imediatamente todas as demais thread que estiverem rodando

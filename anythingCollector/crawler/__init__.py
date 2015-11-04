@@ -105,27 +105,34 @@ class GetDependencies:
             dict_dependencies = None
             for i in self.dependencies:
                 current_dict_dependencies = Crawler.db.get_dependencies(people_id, *i)
+
+                # Já tem todos os dados presentes?
                 if None not in current_dict_dependencies.values():
                     dict_dependencies = current_dict_dependencies
                     break
 
+                # A rota tem todos os dados faltosos alcançáveis?
                 use_it = True
                 for k, v in current_dict_dependencies.items():
                     if v is not None:
                         continue
 
-                    if gdp.is_depedence_reachable(k, exclude_crawler=self.name) is False:
+                    if gdp.is_dependence_reachable(k, exclude_crawler=self.name) is False:
                         use_it = False
                         break
 
                 if use_it is False:
                     continue
 
+                # Essa alternativa de rota é mais curta que a já selecionada?
                 if dict_dependencies is not None and len(dict_dependencies) > len(current_dict_dependencies):
                     dict_dependencies = current_dict_dependencies
 
                 if dict_dependencies is None:
                     dict_dependencies = current_dict_dependencies
+
+            if dict_dependencies is None:
+                return False
         else:
             dict_dependencies = Crawler.db.get_dependencies(people_id, *self.dependencies)
 
@@ -133,9 +140,10 @@ class GetDependencies:
         # Se não estiver, então vai colhe-la e chamar novamente esse mesmo método
         for dependence_name, dependence_value in dict_dependencies.items():
             if dependence_value is None:
-                gdp.harvest_dependence(dependence_name)
-                self.__call__(*args, **kwargs)
-                return
+                if gdp.harvest_dependence(dependence_name):
+                    return self.__call__(*args, **kwargs)
+                else:
+                    return False
 
         self.harvest(*args, dependencies=dict_dependencies, **kwargs)
 
@@ -144,8 +152,9 @@ import functools
 
 # De forma implícita, sempre será commitada as alterações ao banco de dados ao finalizar a colheita
 def harvest_and_commit(harvest_fun, *args, **kwargs):
-    harvest_fun(*args, **kwargs)
+    result = harvest_fun(*args, **kwargs)
     Crawler.db.commit()
+    return result
 
 for i in Crawler.__subclasses__():
     if i.dependencies() != '':
