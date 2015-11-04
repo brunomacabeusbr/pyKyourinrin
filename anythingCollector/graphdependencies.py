@@ -175,8 +175,6 @@ class GraphDependenciesOfThisPeople:
             if not edge_crawler in crawlers_to_target:
                 crawlers_to_target.append(edge_crawler)
 
-        # todo: falta considerar o caso de que não haja nenhuma rota possível
-
         # vamos usar os crawlers que levam ao node target
         # repare que esse código leva à recursividade, pois se uma das depedências desses crawlers não estiverem satisfeitas,
         # será chamado novamente esse mesmo código
