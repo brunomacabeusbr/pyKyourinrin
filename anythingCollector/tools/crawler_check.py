@@ -169,7 +169,7 @@ print('\n* Checar método harvest *\n')
 if dependencies_fail:
     print('Não foi possível fazer essa verificação, pois houve falha grave em depedencies')
 else:
-    dependencies_all_right = True
+    harvest_all_right = True
 
     if ct.harvest.__class__.__name__ == 'GetDependencies':
         # Devido ao decorator implícito de recolher as depedências, o método harvest pode acabar tornando-se objeto da classe GetDependencies
@@ -180,11 +180,15 @@ else:
 
     if have_dependencies and 'dependencies' not in harvest_args:
         print('Erro: Crawler tem depedências, mas falta o parâmetro "depedencies" no cabeçalho de harvest')
-        dependencies_all_right = False
+        harvest_all_right = False
 
     if have_dependencies and 'id' not in harvest_args:
         print('Erro: Crawler tem depedências, mas falta o parâmetro "id" no cabeçalho de harvest')
-        dependencies_all_right = False
+        harvest_all_right = False
 
-    if dependencies_all_right:
+    if not have_dependencies and 'id' in harvest_args:
+        print('Erro: Crawler não tem depedências, mas há o parâmetro "id" no cabeçalho de harvest')
+        harvest_all_right = False
+
+    if harvest_all_right:
         print('Nenhum erro foi encontrado')

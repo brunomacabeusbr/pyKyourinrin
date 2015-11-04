@@ -183,7 +183,6 @@ class GraphDependenciesOfThisPeople:
 
         for i in crawlers_to_target:
             i.harvest(id=self.id)
-            # todo: tomar cuidado com os crawlers base, da qual não possuem o parâmetro "id", preciso verificar se tem ou não id no harvest para executar isso aqui
 
             # Conseguiu colher o dado desejado? Se sim, para o loop
             if self.db.get_dependencies(self.id, target)[target] is not None:
