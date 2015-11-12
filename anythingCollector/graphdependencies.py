@@ -2,6 +2,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib.colors
 from crawler import Crawler
+import math
 
 
 class GraphDependencies:
@@ -27,7 +28,8 @@ class GraphDependencies:
         # os nodes são todas as informações coletáveis
         for current_crawler in list_crawler:
             for current_crop in current_crawler.crop():
-                self.graph.add_node(current_crop)
+                if len(current_crop) > 0:
+                    self.graph.add_node(current_crop)
 
         ###
         # crir edges da depedência para a info que colhe
@@ -48,67 +50,94 @@ class GraphDependencies:
                 dependencies = current_crawler.dependencies()
 
             [self.graph.add_edge(current_dependence, current_crop, **crawler_infos)
-             for current_dependence in dependencies for current_crop in current_crawler.crop()]
+             for current_dependence in dependencies for current_crop in current_crawler.crop()
+             if len(current_crop) > 0 if current_dependence != current_crop]
 
         ###
         # definir posições dos nodes
         # isso só é necessário para desenhar o grafo
+        self.pos = dict()
+
+        def get_points(r, nodes):
+            pos = dict()
+
+            teta = 360 / len(nodes)
+            teta = math.radians(teta)
+
+            x = 0
+            for i in nodes:
+                pos[i] = (
+                    (r * 1) * (math.cos(teta * x)),
+                    (r * 1) * (math.sin(teta * x))
+                )
+                x += 1
+
+            return pos
+
+        # irá gerar a array com a ordem de depedencie
+        # cada elemento será adicionado a uma nova array se depender apenas dos que já estão incluído nos leveis anteriores
+        # por exemplo
+        # [['a', 'b']] -> 'a' e 'b' dependem de ninguém
+        # [['a', 'b'], ['c', 'd', 'e']] -> 'c', 'd' e 'e' depende de algum, ou todos, itens anteriores
+        # [['a', 'b'], ['c', 'd', 'e'], ['f']] -> 'f' depende de algum, ou todos, elementos do segundo nível e/ou algum, ou todos, do primeiro nível
+
+        level_dependence = []
+
+        def level_dependence_expanded():
+            return [i2 for i in level_dependence for i2 in i]
+
+        def element_present(element):
+            return element in level_dependence_expanded()
+
         list_dates_base = [i.crop() for i in list_crawler if i.dependencies() == ''] # pegar todos as infos que podem ser alcançadas sem depedência
         list_dates_base = [x for xs in list_dates_base for x in xs] # remover das tuplas
+        level_dependence.append(list_dates_base)
 
-        pos = {}
+        total_infos = list(set([i2 for i in list_crawler for i2 in i.crop()]))
 
-        def get_x_possible(x, level, depedencies):
-            if (x, level) in pos:
-                return get_x_possible(x + 1, level, depedencies)
-            else:
-                ok = True
-                dependencia_no_mesmo_y = False
-                for i in range(level):
-                    if not dependencia_no_mesmo_y:
-                        if (x, i) in pos and pos[x, i] in depedencies:
-                            dependencia_no_mesmo_y = True
+        level = 1
+        while len(level_dependence_expanded()) != len(total_infos):
+            level_dependence.append([])
+
+            for current_crawler in list_crawler:
+                for i2 in current_crawler.crop():
+                    # verificar se ele mesmo já está presente
+                    if element_present(i2):
+                        continue
+
+                    # verificar depedencias dele
+                    my_dependencies = [i3 for i3 in current_crawler.dependencies()]
+                    # verificar se há várias rotas de depedencia
+                    multiple_dependence_routes = (type(my_dependencies[0]) == tuple)
+                    if multiple_dependence_routes:
+                        # se tiver multiplas rotas, vai verificar se alguma delas é alcançável com os dados já disponíveis
+                        for ix in my_dependencies:
+                            my_check_dep = [element_present(i3) for i3 in ix]
+                            if False not in my_check_dep:
+                                break
                     else:
-                        if (x, i) in pos:
-                            ok = False
-                            break
+                        my_check_dep = [element_present(i3) for i3 in my_dependencies]
+                    if False not in my_check_dep:
+                        level_dependence[level].append(i2)
 
-                if ok:
-                    return x
-                else:
-                    return get_x_possible(x + 1, level, depedencies)
+            level += 1
 
-        def add_pos_base(name, depedencies):
-            add_pos(0, name, depedencies)
+        level = 1
+        for i in level_dependence:
+            self.pos.update(get_points(level, i))
+            level += 1
 
-        def add_pos(level, name, depedencies):
-            pos[(get_x_possible(0, level, depedencies), level)] = name
-
-        for i in list_crawler:
-            for i2 in i.crop():
-                if i.dependencies() == '':
-                    add_pos_base(i2, i.dependencies())
-                else:
-                    mypaths = []
-                    for i3 in list_dates_base:
-                        for i4 in nx.all_simple_paths(self.graph, i3, i2):
-                            try:
-                                mypaths.append(len(i4))
-                            except:
-                                pass
-
-                    add_pos(max(mypaths), i2, i.dependencies())
-
-        self.pos_invert = {v: k for k, v in pos.items()}
+        # todo: primeiro momento vai desenhar o grafo usando a alternativa 1, depoi vai desenhar usando a alternativa 2,
+        # todo: desenhar legenda para tirar as labels de cima das arestas
 
     def draw(self):
         edges, colors = zip(*nx.get_edge_attributes(self.graph, 'color').items())
 
-        nx.draw(self.graph, pos=self.pos_invert, with_labels=True,
+        nx.draw(self.graph, pos=self.pos, with_labels=True,
                 font_size=10, font_color='r',
-                node_color='black', node_size=1000,
+                node_color='black', node_size=1000, alpha=0.5,
                 edgelist=edges, edge_color=colors)
-        nx.draw_networkx_edge_labels(self.graph, pos=self.pos_invert, edge_labels=nx.get_edge_attributes(self.graph, 'crawler_name'), label_pos=0.85, font_size=8)
+        nx.draw_networkx_edge_labels(self.graph, pos=self.pos, edge_labels=nx.get_edge_attributes(self.graph, 'crawler_name'), label_pos=0.85, font_size=8)
         # todo: em edge_labels, preciso separar por vírgula caso haja dois ou mais crawlers que levem para a mesma info
         plt.savefig("graph.png")
         plt.show()
@@ -121,7 +150,7 @@ class GraphDependenciesOfThisPeople:
         self.id = id
         self.db = db
         self.gd = gd.graph.copy()
-        self.pos_invert = gd.pos_invert
+        self.pos = gd.pos
 
         ###
         # apagar edges de crawlers já usados
@@ -143,14 +172,18 @@ class GraphDependenciesOfThisPeople:
                 self.gd.node[k]['node_color'] = 'black'
 
     def draw(self):
-        edges, colors = zip(*nx.get_edge_attributes(self.gd, 'color').items())
+        edges, colors = None, None
+        edges_colors_items = nx.get_edge_attributes(self.gd, 'color').items()
+        if len(edges_colors_items):
+            edges, colors = zip(*edges_colors_items)
+
         nodes, node_color = zip(*nx.get_node_attributes(self.gd, 'node_color').items())
 
-        nx.draw(self.gd, pos=self.pos_invert, with_labels=True,
+        nx.draw(self.gd, pos=self.pos, with_labels=True,
                 font_size=10, font_color='r',
                 nodelist=nodes, node_color=node_color, node_size=1000,
                 edgelist=edges, edge_color=colors)
-        nx.draw_networkx_edge_labels(self.gd, pos=self.pos_invert, edge_labels=nx.get_edge_attributes(self.gd, 'crawler_name'), label_pos=0.85, font_size=8)
+        nx.draw_networkx_edge_labels(self.gd, pos=self.pos, edge_labels=nx.get_edge_attributes(self.gd, 'crawler_name'), label_pos=0.85, font_size=8)
         # todo: em edge_labels, preciso separar por vírgula caso haja dois ou mais crawlers que levem para a mesma info
         plt.savefig("graph_people.png")
         plt.show()
