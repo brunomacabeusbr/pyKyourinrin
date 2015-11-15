@@ -114,3 +114,47 @@ class ManagerDatabase:
 
         return self.execute("SELECT * FROM peoples WHERE %s" %
                                 ' AND '.join("{}='{}'".format(k, v) for k, v in filter.items())).fetchone()[0]
+
+    def get_peoples_with_criteria(self, want=[], crawler_need=None, crawler_exclude=None, restriction=None):
+        to_return = []
+
+        for current_people in self.execute('SELECT id FROM peoples').fetchall():
+            current_id = current_people[0]
+
+            if crawler_need is not None:
+                list_crawler = self.crawler_list_status(current_id)
+                pass_this_people = False
+                for i in crawler_need:
+                    if list_crawler[i] != 1:
+                        pass_this_people = True
+                        break
+                if pass_this_people:
+                    continue
+
+            if crawler_exclude is not None:
+                list_crawler = self.crawler_list_status(current_id)
+                pass_this_people = False
+                for i in crawler_exclude:
+                    if list_crawler[i] == 1:
+                        pass_this_people = True
+                        break
+                if pass_this_people:
+                    continue
+
+            if restriction is not None:
+                dep = self.get_dependencies(current_id, *restriction.keys())
+                pass_this_people = False
+                for i in dep:
+                    if not eval(str(dep[i]) + ' ' + restriction[i]):
+                        pass_this_people = True
+                        break
+                if pass_this_people:
+                    continue
+
+            my_dict = {'id': current_id}
+            if len(want):
+                my_dict.update({k: v for k, v in self.get_people_info_all(current_id).items() if k in want})
+
+            to_return.append(my_dict)
+
+        return to_return
