@@ -41,7 +41,8 @@ class CrawlerEtufor(Crawler):
     def harvest(cls, id=None, dependencies=None):
         phantom = webdriver.PhantomJS()
 
-        phantom.get('http://www.fortaleza.ce.gov.br/etuforComponents/CarteiradeEstudantes/consultaSolicitacao.php')
+        phantom.get('http://www.etufor.ce.gov.br/index_novo.asp?pagina=sit_carteira2007.asp')
+
         if 'cia' in dependencies:
             form_consultation = phantom.find_element_by_name('CIA')
             form_consultation.send_keys(dependencies['cia'])
@@ -49,6 +50,7 @@ class CrawlerEtufor(Crawler):
             form_consultation = phantom.find_element_by_name('Nome')
             form_consultation.send_keys(dependencies['name'] + Keys.TAB + '{:02}'.format(dependencies['birthday_day']) + '{:02}'.format(dependencies['birthday_month']) + '{:02}'.format(dependencies['birthday_year']))
         phantom.find_element_by_name('btnpesq').click()
+        phantom.switch_to.window(phantom.window_handles[1])
 
         def count_total_box_table():
             return len(phantom.find_elements_by_css_selector('font'))
