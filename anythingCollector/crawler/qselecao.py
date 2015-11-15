@@ -80,7 +80,7 @@ class CrawlerQSelecao(Crawler):
             regex_get_id_candidato_concurso = re.compile(r'idcandidatoconcurso=(\d+)')
             for i in range(26):
                 while True:
-                    peoples = phantom.execute_script("return $('#ctl00_ContentPlaceHolderPrincipal_grvConsulta tbody tr').find('a')")
+                    peoples = phantom.execute_script("return $('#ctl00_ContentPlaceHolderPrincipal_grvConsulta tbody tr a[target]')")
                     for i3 in peoples:
                         list_to_return.append(int(regex_get_id_candidato_concurso.search(i3.get_attribute('href')).group(1)))
 
