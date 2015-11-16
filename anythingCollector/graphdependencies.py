@@ -35,7 +35,7 @@ class GraphDependencies:
         # crir edges da depedência para a info que colhe
         # os edges é um crawler ligando uma info à outra info, na ordem dependence -> crop
         for current_crawler in list_crawler:
-            if len(current_crawler.dependencies()) == 0:
+            if current_crawler.have_dependencies() is False:
                 continue
 
             crawler_infos = {'color': current_crawler.my_color, 'crawler': current_crawler, 'crawler_name': current_crawler.name()}
@@ -89,9 +89,9 @@ class GraphDependencies:
         def element_present(element):
             return element in level_dependence_expanded()
 
-        list_dates_base = [i.crop() for i in list_crawler if i.dependencies() == ''] # pegar todos as infos que podem ser alcançadas sem depedência
+        list_dates_base = [i.crop() for i in list_crawler if i.have_dependencies() is False] # pegar todos as infos que podem ser alcançadas sem depedência
         list_dates_base = [x for xs in list_dates_base for x in xs] # remover das tuplas
-        level_dependence.append(list_dates_base)
+        level_dependence.append(set(list_dates_base))
 
         total_infos = list(set([i2 for i in list_crawler for i2 in i.crop()]))
 

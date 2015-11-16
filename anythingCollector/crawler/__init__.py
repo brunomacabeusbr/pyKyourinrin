@@ -43,6 +43,10 @@ class Crawler:
     @abstractmethod
     def dependencies(): pass
 
+    @classmethod
+    def have_dependencies(cls):
+        return cls.dependencies()[0] != ''
+
     @staticmethod
     @abstractmethod
     def crop(): pass
@@ -157,7 +161,7 @@ def harvest_and_commit(harvest_fun, *args, **kwargs):
     return result
 
 for i in Crawler.__subclasses__():
-    if i.dependencies() != '':
+    if i.have_dependencies():
         i.harvest = functools.partial(harvest_and_commit, GetDependencies(i))
     else:
         i.harvest = functools.partial(harvest_and_commit, i.harvest)

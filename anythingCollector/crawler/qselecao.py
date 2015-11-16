@@ -19,7 +19,7 @@ class CrawlerQSelecao(Crawler):
 
     @staticmethod
     def dependencies():
-        return ''
+        return '',
 
     @staticmethod
     def crop():
