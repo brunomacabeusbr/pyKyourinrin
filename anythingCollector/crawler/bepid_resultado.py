@@ -9,9 +9,9 @@ class CrawlerBepidResultado(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
                             'peopleid INTEGER,'
-                            'position INTEGER,'
-                            'score INTEGER,'
-                            'ranked INTEGER,'
+                            'bepid_position INTEGER,'
+                            'bepid_score INTEGER,'
+                            'bepid_ranked INTEGER,'
                             'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
                         ');' % self.name())
 
