@@ -199,10 +199,19 @@ class ManagerDatabase:
             if restriction is not None:
                 dep = self.get_dependencies(current_id, *restriction.keys())
                 pass_this_people = False
-                for i in dep:
-                    if not eval(str(dep[i]) + ' ' + restriction[i]):
-                        pass_this_people = True
-                        break
+                for k, v in dep.items():
+                    if str(v).replace('.', '', 1).isdigit():
+                        if not eval(str(v) + ' ' + restriction[k]):
+                            pass_this_people = True
+                            break
+                    elif str(v) == 'None':
+                        if not eval(str(v) + ' ' + restriction[k]):
+                            pass_this_people = True
+                            break
+                    else:
+                        if not eval('"' + str(v) + '" ' + restriction[k]):
+                            pass_this_people = True
+                            break
                 if pass_this_people:
                     continue
 
