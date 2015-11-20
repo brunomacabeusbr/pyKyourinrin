@@ -17,10 +17,20 @@ class Crawler:
     @abstractmethod
     def create_my_table(self): pass
 
+    @staticmethod
+    def read_my_secondary_tables():
+        return ()
+
+    @staticmethod
+    def secondary_tables_export():
+        return ()
+
     @classmethod
     def update_my_table(cls, id, column_and_value, table=None):
         if table is None:
             table = cls.name()
+            if Crawler.db.execute("SELECT COUNT(*) FROM " + table + " WHERE peopleid=?", (id,)).fetchone()[0] > 0:
+                raise ValueError("Essa pessoa já está presente na tabela principal do crawler")
         else:
             table = cls.name() + '_' + table
 

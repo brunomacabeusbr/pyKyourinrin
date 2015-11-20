@@ -24,6 +24,23 @@ class CrawlerEtufor(Crawler):
                         'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
                         ');' % (self.name() + '_records_school'))
 
+    @staticmethod
+    def read_my_secondary_tables():
+        return (
+            {'table': 'records_school'},
+        )
+
+    @staticmethod
+    def secondary_tables_export():
+        def last_school_name(readed):
+            if len(readed['records_school']) > 0:
+                return readed['records_school'][-1]['school']
+            else:
+                return None
+
+        return (
+            {'column_name': 'last_school_name', 'how': last_school_name},
+        )
 
     @staticmethod
     def name():
@@ -35,7 +52,7 @@ class CrawlerEtufor(Crawler):
 
     @staticmethod
     def crop():
-        return 'name_social', 'cia', 'name', 'name_monther', 'birthday_day', 'birthday_month', 'birthday_year'
+        return 'name_social', 'cia', 'name', 'name_monther', 'birthday_day', 'birthday_month', 'birthday_year', 'last_school_name'
 
     @classmethod
     def harvest(cls, id=None, dependencies=None):

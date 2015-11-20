@@ -56,6 +56,18 @@ class ManagerDatabase:
 
         return {k[0]: v for k, v in list(zip(execute.description, fetch))}
 
+    # todo: talvez possa juntar esse método com o de cima
+    def select_column_and_value_many(self, sql, parameters=()):
+        execute = self.execute(sql, parameters)
+        fetch = execute.fetchall()
+
+        to_return = []
+
+        for i in fetch:
+            to_return.append({k[0]: v for k, v in list(zip(execute.description, i))})
+
+        return to_return
+
     def count_people_with_this_filters(self, filter):
         # todo: só filtra com base nos dados da tabela peoples
         return len(self.execute("SELECT * FROM peoples WHERE %s" %
@@ -90,13 +102,56 @@ class ManagerDatabase:
     def crawler_list_used(self, id):
         return {k: v for k, v in self.crawler_list_status(id).items() if v != 0}
 
+    def crawler_list_success(self, id):
+        return [k for k, v in self.crawler_list_status(id).items() if v == 1]
+
     def get_people_info_all(self, id):
+        # Recolher dados da tabela peoples
         fieldnames = self.select_column_and_value("SELECT * FROM peoples WHERE id=?", (id,))
 
+        # Recolher dados da tabela dos crawlers
+        crawler_list_success = self.crawler_list_success(id)
         for cls in Crawler.__subclasses__():
-            # todo: desse jeito pegará apenas a tabela principal do crawler. tomar cuidado para saber se isso causará problemas ou não
-            fieldnames.update(self.select_column_and_value("SELECT * FROM %s WHERE peopleid=?" % cls.name(), (id,)))
+            # Tabela principal
+            dict_infos_main_table = self.select_column_and_value("SELECT * FROM %s WHERE peopleid=?" % cls.name(), (id,))
+            fieldnames.update(dict_infos_main_table)
 
+            # Tabelas secundárias
+            if cls.name() in crawler_list_success:
+                list_tables_diretas = []
+
+                for current in cls.read_my_secondary_tables():
+                    table = current['table']
+
+                    if 'reference_column' not in current.keys():
+                        list_tables_diretas.append(table)
+                        x = self.select_column_and_value_many("SELECT * FROM %s WHERE peopleid=?" % (cls.name() + '_' + table), (id,))
+                        for i in x:
+                            del i['peopleid']
+
+                        fieldnames.update({cls.name() + '_' + table: x})
+                    else:
+                        reference_table = current['reference_column'][0]
+                        reference_column = current['reference_column'][1]
+
+                        for i in fieldnames[cls.name() + '_' + reference_table]:
+                            referenceid = i[reference_column]
+                            x = self.select_column_and_value_many("SELECT * FROM %s WHERE %s=?" % (cls.name() + '_' + table, reference_column), (referenceid,))
+                            for i2 in x:
+                                del i2['peopleid']
+
+                            i[reference_column] = x
+
+                to_pass = {i: fieldnames[cls.name() + '_' + i] for i in list_tables_diretas}
+                to_pass.update(dict_infos_main_table)
+
+                for current in cls.secondary_tables_export():
+                    fieldnames[current['column_name']] = current['how'](to_pass)
+            else:
+                for current in cls.secondary_tables_export():
+                    fieldnames[current['column_name']] = None
+
+        #
         del fieldnames['id']
         del fieldnames['peopleid']
 

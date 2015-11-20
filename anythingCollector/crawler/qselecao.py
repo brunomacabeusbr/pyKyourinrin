@@ -6,6 +6,7 @@ from selenium import webdriver
 
 class CrawlerQSelecao(Crawler):
     def create_my_table(self):
+        # todo: atualizar qselecao para o novo padrão, pois aqui o mesmo peopleid pode ter várias linhas
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
                             'peopleid INTEGER,'
                             'name_public_tender TEXT,'

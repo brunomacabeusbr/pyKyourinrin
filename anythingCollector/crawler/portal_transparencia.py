@@ -10,11 +10,17 @@ class CrawlerPortalTransparencia(Crawler):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
                             'peopleid INTEGER,'
                             'federal_employee_type TEXT,'
+                            'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
+                        ');' % self.name())
+
+        self.db.execute('CREATE TABLE IF NOT EXISTS %s('
+                            'peopleid INTEGER,'
+                            'type_contract TEXT,'
                             'job TEXT,'
                             'workplace TEXT,'
                             'working_hours TEXT,'
                             'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
-                        ');' % self.name())
+                        ');' % (self.name() + '_job'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
                             'peopleid INTEGER,'
@@ -34,6 +40,46 @@ class CrawlerPortalTransparencia(Crawler):
                         ');' % (self.name() + '_remuneration_info', self.name() + '_remuneration_date'))
 
     @staticmethod
+    def read_my_secondary_tables():
+        return (
+            {'table': 'job'},
+            {'table': 'remuneration_date'},
+            {'table': 'remuneration_info', 'reference_column': ('remuneration_date', 'remunerationid')}
+        )
+
+    @staticmethod
+    def secondary_tables_export():
+        def salary_average(readed):
+            salary_total = 0
+            for i in readed['remuneration_date']:
+                for i2 in i['remunerationid']:
+                    salary_total += i2['value']
+
+            return salary_total / len(readed['remuneration_date'])
+
+        def job(readed):
+            # Retorna o emprego principal da pessoa.
+            # No caso de pessoas com mais de uma função, a prioridade segue a seguinte ordem considerando o type_contract:
+            # Posto/Graduação > Cargo Emprego > Demais situações - agentes públicos > Função ou Cargo de Confiança
+            priority = {'Posto/Graduação': 0, 'Cargo Emprego': 1, 'Demais situações - agentes públicos': 2, 'Função ou Cargo de Confiança': 3}
+
+            vou_ler = None
+            for i in readed['job']:
+                if vou_ler is None:
+                    vou_ler = i
+                else:
+                    if priority[i['type_contract']] < priority[vou_ler['type_contract']]:
+                        vou_ler = i
+
+            return vou_ler['job']
+
+        # todo: retornar não só o job, mas o workplace e demais dados relacionados, seguindo a mesma ordem de prioridade de job
+        return (
+            {'column_name': 'salary_average', 'how': salary_average},
+            {'column_name': 'job', 'how': job},
+        )
+
+    @staticmethod
     def name():
         return 'portal_transparencia'
 
@@ -44,7 +90,7 @@ class CrawlerPortalTransparencia(Crawler):
     @staticmethod
     def crop():
         # todo: retorna o cpf, porém, parcial. Preciso aumentar o grau de abstração para dizer que está colhendo parte do cpf
-        return '',
+        return 'federal_employee_type', 'salary_average', 'job'
 
     @classmethod
     def harvest(cls, id=None, dependencies=None, specific_name=None, specific_siteid=None):
@@ -145,13 +191,14 @@ class CrawlerPortalTransparencia(Crawler):
             cls.db.update_people({'name': people_name}) # todo: precisa lidar com o caso do cpf ser parcial
             #cls.db.update_people({'name': people_name}, {'cpf': people_cpf})
             tableid = cls.db.get_tableid_of_people({'name': people_name})
+            cls.update_my_table(tableid, {'federal_employee_type': people_federal_employee_type})
 
             # Infos do emprego
             jobs_infos = phantom.execute_script(
                 """
                   // Nessa hash fica a "tradução" dos dados das colunas da variável want,
                   // do nome da coluna presente no Portal da Transparência com o nome da coluna a ser salva no banco de dados do crawler
-                  var translate = {'Cargo Emprego': 'job', 'Posto/Graduação': 'job',
+                  var translate = {'Cargo Emprego': 'job', 'Posto/Graduação': 'job', 'Atividade': 'job',
                                     'Órgão': 'workplace',
                                     'Jornada de Trabalho': 'working_hours'};
 
@@ -162,6 +209,7 @@ class CrawlerPortalTransparencia(Crawler):
                                 'Posto/Graduação',
                                 ['Local de Exercício - Localização', 'Órgão'],
                                 ['Posto/Graduação', 'Órgão'],
+                                ['Função', 'Atividade'],
                                 'Jornada de Trabalho'];
 
                     // Trabalhar na análise da coluna
@@ -200,6 +248,9 @@ class CrawlerPortalTransparencia(Crawler):
 
                     // Fazer parser em cada linha da tabela de informações da pessoa e vai armazenando o resultado na hash to_return
                     var to_return = {};
+
+                    to_return['type_contract'] = panel_target.find('thead').text().trim();
+
                     panel_target.find('tr:not(:first)').each(function (k, v) {
                       var current_column = $(v).find('td').eq(0).html().replace(/&nbsp;/gi, '').trim();
                       if (current_column.slice(-1) == ':') {
@@ -234,8 +285,7 @@ class CrawlerPortalTransparencia(Crawler):
                 for i in jobs_infos:
                     i = defaultdict(lambda: None, i)
                     cls.update_my_table(tableid,
-                                        {'federal_employee_type': people_federal_employee_type,
-                                         'job': i['job'], 'workplace': i['workplace'], 'working_hours': i['working_hours']})
+                                        {'type_contract': i['type_contract'], 'job': i['job'], 'workplace': i['workplace'], 'working_hours': i['working_hours']}, table='job')
 
             # Infos salariais
             phantom.get('http://www.portaltransparencia.gov.br/servidores/Servidor-DetalhaRemuneracao.asp?Op=1&bInformacaoFinanceira=True&IdServidor=' + str(current_siteid))
