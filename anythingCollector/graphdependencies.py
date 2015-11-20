@@ -137,8 +137,16 @@ class GraphDependencies:
                 font_size=10, font_color='r',
                 node_color='black', node_size=1000, alpha=0.5,
                 edgelist=edges, edge_color=colors)
-        nx.draw_networkx_edge_labels(self.graph, pos=self.pos, edge_labels=nx.get_edge_attributes(self.graph, 'crawler_name'), label_pos=0.85, font_size=8)
-        # todo: em edge_labels, preciso separar por vírgula caso haja dois ou mais crawlers que levem para a mesma info
+
+        # todo: talvez haja um meio melhor de fazer a legenda
+        # todo: caso dois edges tenham a mesma rota, um deles vai ficar escondido
+        import matplotlib.patches as mpatches
+        edges_patches = []
+        for i in Crawler.__subclasses__():
+            edges_patches.append(mpatches.Patch(color=i.my_color, label=i.name()))
+
+        plt.legend(handles=edges_patches)
+
         plt.savefig("graph.png")
         plt.show()
 
@@ -181,10 +189,18 @@ class GraphDependenciesOfThisPeople:
 
         nx.draw(self.gd, pos=self.pos, with_labels=True,
                 font_size=10, font_color='r',
-                nodelist=nodes, node_color=node_color, node_size=1000,
+                nodelist=nodes, node_color=node_color, node_size=1000, alpha=0.5,
                 edgelist=edges, edge_color=colors)
-        nx.draw_networkx_edge_labels(self.gd, pos=self.pos, edge_labels=nx.get_edge_attributes(self.gd, 'crawler_name'), label_pos=0.85, font_size=8)
-        # todo: em edge_labels, preciso separar por vírgula caso haja dois ou mais crawlers que levem para a mesma info
+
+        # todo: talvez haja um meio melhor de fazer a legenda
+        # todo: caso dois edges tenham a mesma rota, um deles vai ficar escondido
+        import matplotlib.patches as mpatches
+        edges_patches = []
+        for i in Crawler.__subclasses__():
+            edges_patches.append(mpatches.Patch(color=i.my_color, label=i.name()))
+
+        plt.legend(handles=edges_patches)
+
         plt.savefig("graph_people.png")
         plt.show()
 
