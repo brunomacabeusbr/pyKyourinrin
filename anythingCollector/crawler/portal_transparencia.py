@@ -188,9 +188,14 @@ class CrawlerPortalTransparencia(Crawler):
 
             people_name = people_name.title()
 
-            cls.db.update_people({'name': people_name}) # todo: precisa lidar com o caso do cpf ser parcial
-            #cls.db.update_people({'name': people_name}, {'cpf': people_cpf})
-            tableid = cls.db.get_tableid_of_people({'name': people_name})
+            if id is None:
+                cls.db.update_people({'name': people_name}) # todo: precisa lidar com o caso do cpf ser parcial para poder salva-lo e usa-lo
+                #cls.db.update_people({'name': people_name}, {'cpf': people_cpf})
+                tableid = cls.db.get_tableid_of_people({'name': people_name})
+            else:
+                cls.db.update_people({'id': id}, {'name': people_name})
+                #cls.db.update_people({'id': id}, {'name': people_name, 'cpf': people_cpf})
+                tableid = cls.db.get_tableid_of_people({'id': id})
             cls.update_my_table(tableid, {'federal_employee_type': people_federal_employee_type})
 
             # Infos do emprego
@@ -323,4 +328,4 @@ class CrawlerPortalTransparencia(Crawler):
                     cls.update_my_table(tableid, {'remunerationid': remunerationid, 'type': i2['type'], 'value': i2['value']}, table='remuneration_info')
 
             # Finalizar
-            cls.update_crawler(people_name, 1)
+            cls.update_crawler(tableid, 1)
