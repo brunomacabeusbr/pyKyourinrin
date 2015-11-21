@@ -17,8 +17,8 @@ class ManagerDatabase:
                         'birthday_day INTEGER,'
                         'birthday_month INTEGER,'
                         'birthday_year INTEGER,'
-                        'identity INTEGER,'
-                        'cpf INTEGER,'
+                        'identity TEXT,'
+                        'cpf TEXT,'
                         'name_monther TEXT'
                     ');')
 
