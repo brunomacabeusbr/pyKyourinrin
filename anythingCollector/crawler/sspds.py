@@ -42,13 +42,13 @@ class CrawlerSspds(Crawler):
             f.close()
             os.remove('myfile.pdf')
 
-            regexAntecedentes = re.compile('(CPF|RG).*?(\d+)\s*\.(.*?)Fortaleza')
-            document, peopleCpf, peopleAntecedentes = regexAntecedentes.search(contents).groups()
+            regexp_antecedentes = re.compile('(CPF|RG)[\sNº]*([\d-]+)\s*\.(.*?)Fortaleza.*$')
+            document, people_cpf, people_antecedentes = regexp_antecedentes.search(contents).groups()
 
             if document == 'CPF':
-                cls.db.update_people({'name': dependencies['name']}, {'cpf': peopleCpf})
+                cls.db.update_people({'name': dependencies['name']}, {'cpf': people_cpf})
 
-            cls.update_my_table(id, {'registrocriminal': peopleAntecedentes})
+            cls.update_my_table(id, {'registrocriminal': people_antecedentes})
             cls.update_crawler(id, 1)
         else:
             cls.update_crawler(id, -1)
