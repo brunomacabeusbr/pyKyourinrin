@@ -71,7 +71,7 @@ class ManagerDatabase:
     def count_people_with_this_filters(self, filter):
         # todo: só filtra com base nos dados da tabela peoples
         return len(self.execute("SELECT * FROM peoples WHERE %s" %
-                                ' AND '.join("{}='{}'".format(k, v) for k, v in filter.items())).fetchall())
+                                ' AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in filter.items())).fetchall())
 
     def people_exists(self, filter):
         return self.count_people_with_this_filters(filter) > 0
@@ -92,7 +92,7 @@ class ManagerDatabase:
             column_and_value = {i: j for i, j in column_and_value.items() if j is not None}
 
             self.execute("UPDATE peoples SET " + ','.join('{}="{}"'.format(key, val) for key, val in column_and_value.items()) + ' WHERE %s ' %
-                         ' AND '.join("{}='{}'".format(k, v) for k, v in filter.items()))
+                         ' AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in filter.items()))
 
     def crawler_list_status(self, id):
         fieldnames = self.select_column_and_value('SELECT * FROM crawler WHERE peopleid=?', (id,))
@@ -165,7 +165,7 @@ class ManagerDatabase:
             raise ValueError('Há mais que uma pessoa com os critérios fornecidos! Não sei qual eu devo entregar o ID')
 
         return self.execute("SELECT * FROM peoples WHERE %s" %
-                                ' AND '.join("{}='{}'".format(k, v) for k, v in filter.items())).fetchone()[0]
+                            ' AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in filter.items())).fetchone()[0]
 
     def get_peoples_with_criteria(self, want=[], crawler_need=None, crawler_exclude=None, restriction=None):
         to_return = []
