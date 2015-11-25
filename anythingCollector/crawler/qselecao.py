@@ -6,13 +6,35 @@ from selenium import webdriver
 
 class CrawlerQSelecao(Crawler):
     def create_my_table(self):
-        # todo: atualizar qselecao para o novo padrão, pois aqui o mesmo peopleid pode ter várias linhas
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
                             'peopleid INTEGER,'
-                            'name_public_tender TEXT,'
-                            'course TEXT,'
                             'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
                         ');' % self.name())
+
+        self.db.execute('CREATE TABLE IF NOT EXISTS %s('
+                        'peopleid INTEGER,'
+                        'name_public_tender TEXT,'
+                        'course TEXT,'
+                        'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
+                        ');' % (self.name() + '_public_tender'))
+
+    @staticmethod
+    def read_my_secondary_tables():
+        return (
+            {'table': 'public_tender'},
+        )
+
+    @staticmethod
+    def secondary_tables_export():
+        def lister_public_tender(readed):
+            if len(readed['public_tender']) > 0:
+                return readed['public_tender']
+            else:
+                return None
+
+        return (
+            {'column_name': 'ifce_public_tender', 'how': lister_public_tender},
+        )
 
     @staticmethod
     def name():
@@ -121,13 +143,17 @@ class CrawlerQSelecao(Crawler):
             peopleIdentity = re.sub('[^\d]+', '', regexIdentity.search(r.text).group(1))
 
             cls.db.update_people({'name': peopleName},
-                                  {'birthday_day': peopleBirthdayDay, 'birthday_month': peopleBirthdayMonth, 'birthday_year': peopleBirthdayYear})
+                                 {'birthday_day': peopleBirthdayDay, 'birthday_month': peopleBirthdayMonth, 'birthday_year': peopleBirthdayYear})
             if peopleIdentity.isdecimal():
                 # há casos a serem lidados como em http://qselecao.ifce.edu.br/cartao_identificacao_dinamico.aspx?idcandidatoconcurso=328680&etapa=1
                 cls.db.update_people({'name': peopleName}, {'identity': peopleIdentity})
 
             talbeid = cls.db.get_tableid_of_people({'name': peopleName})
-            cls.update_my_table(talbeid, {'name_public_tender': publicTender, 'course': course})
+            try:
+                cls.update_my_table(talbeid, {})
+            except:
+                pass
+            cls.update_my_table(talbeid, {'name_public_tender': publicTender, 'course': course}, table='public_tender')
             cls.update_crawler(peopleName, 1)
 
         if specifc_concurso is None:

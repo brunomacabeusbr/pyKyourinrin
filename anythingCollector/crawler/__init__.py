@@ -35,7 +35,10 @@ class Crawler:
             table = cls.name() + '_' + table
 
         column_and_value = {i: j for i, j in column_and_value.items() if j is not None}
-        Crawler.db.execute("INSERT INTO " + table + " (peopleid," + ','.join(column_and_value.keys()) + ") VALUES (?," + ('"' + '","'.join(list(map(str, column_and_value.values()))) + '"') + ")", (id,))
+        if len(column_and_value) > 0:
+            Crawler.db.execute("INSERT INTO " + table + " (peopleid," + ','.join(column_and_value.keys()) + ") VALUES (?," + ('"' + '","'.join(list(map(str, column_and_value.values()))) + '"') + ")", (id,))
+        else:
+            Crawler.db.execute("INSERT INTO " + table + " (peopleid) VALUES (?)", (id,))
 
     # id deve ser, preferencialmente, o id da coluna da pessoa, ou então o nome dela
     @classmethod

@@ -113,8 +113,8 @@ class ManagerDatabase:
         crawler_list_success = self.crawler_list_success(id)
         for cls in Crawler.__subclasses__():
             # Tabela principal
-            dict_infos_main_table = self.select_column_and_value("SELECT * FROM %s WHERE peopleid=?" % cls.name(), (id,))
-            fieldnames.update(dict_infos_main_table)
+            dict_infos = self.select_column_and_value("SELECT * FROM %s WHERE peopleid=?" % cls.name(), (id,))
+            fieldnames.update(dict_infos)
 
             # Tabelas secundárias
             if cls.name() in crawler_list_success:
@@ -129,12 +129,12 @@ class ManagerDatabase:
                         for i in x:
                             del i['peopleid']
 
-                        fieldnames.update({cls.name() + '_' + table: x})
+                        dict_infos.update({table: x})
                     else:
                         reference_table = current['reference_column'][0]
                         reference_column = current['reference_column'][1]
 
-                        for i in fieldnames[cls.name() + '_' + reference_table]:
+                        for i in dict_infos[cls.name() + '_' + reference_table]:
                             referenceid = i[reference_column]
                             x = self.select_column_and_value_many("SELECT * FROM %s WHERE %s=?" % (cls.name() + '_' + table, reference_column), (referenceid,))
                             for i2 in x:
@@ -142,11 +142,8 @@ class ManagerDatabase:
 
                             i[reference_column] = x
 
-                to_pass = {i: fieldnames[cls.name() + '_' + i] for i in list_tables_diretas}
-                to_pass.update(dict_infos_main_table)
-
                 for current in cls.secondary_tables_export():
-                    fieldnames[current['column_name']] = current['how'](to_pass)
+                    fieldnames[current['column_name']] = current['how'](dict_infos)
             else:
                 for current in cls.secondary_tables_export():
                     fieldnames[current['column_name']] = None
