@@ -65,8 +65,11 @@ class Crawler:
     def crop(): pass
 
     @classmethod
+    def trigger(cls, table_row): pass
+
+    @classmethod
     @abstractmethod
-    def harvest(self, id): pass
+    def harvest(cls, id): pass
 
 
 # Carregar todos os crawlers da pasta
@@ -164,17 +167,38 @@ class GetDependencies:
 
         self.harvest(*args, dependencies=dict_dependencies, **kwargs)
 
-import functools
 
-
-# De forma implícita, sempre será commitada as alterações ao banco de dados ao finalizar a colheita
 def harvest_and_commit(harvest_fun, *args, **kwargs):
+    # Implicitamente, sempre será commitada as alterações ao banco de dados ao finalizar a colheita
     result = harvest_fun(*args, **kwargs)
     Crawler.db.commit()
     return result
+
+import functools
 
 for i in Crawler.__subclasses__():
     if i.have_dependencies():
         i.harvest = functools.partial(harvest_and_commit, GetDependencies(i))
     else:
         i.harvest = functools.partial(harvest_and_commit, i.harvest)
+
+# Iniciar as threads dos triggers dos crawlers que tiverem
+# Essa função será chamada ao final da iniciação do ManagerDatabase
+def start_triggers():
+    class TriggerTableRow:
+        def __init__(self, crawler):
+            self.crawler = crawler
+
+        def value(self):
+            return Crawler.db.execute("SELECT infos FROM trigger WHERE crawler=?", (self.crawler.name(),)).fetchone()[0]
+
+        def update(self, value):
+            Crawler.db.execute("UPDATE trigger SET infos=? WHERE crawler=?", (value, self.crawler.name(),))
+            Crawler.db.commit()
+
+    import threading
+
+    for i in Crawler.__subclasses__():
+        if i.trigger.__code__ != Crawler.trigger.__code__:
+            t = threading.Thread(target=i.trigger, args=(TriggerTableRow(i),), name=i.name())
+            t.start()

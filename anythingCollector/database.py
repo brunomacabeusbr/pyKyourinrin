@@ -1,11 +1,11 @@
 import sqlite3
-from crawler import Crawler
+from crawler import Crawler, start_triggers
 
 
 class ManagerDatabase:
-    def __init__(self):
+    def __init__(self, trigger=True):
         import os
-        self.con = sqlite3.connect(os.path.dirname(__file__) + "/mydatabase.db")
+        self.con = sqlite3.connect(os.path.dirname(__file__) + "/mydatabase.db", check_same_thread=False)
 
         self.c = self.con.cursor()
 
@@ -28,12 +28,21 @@ class ManagerDatabase:
                         'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
                     ');')
 
+        # Iniciar crawlers
+        self.execute('CREATE TABLE IF NOT EXISTS trigger('
+                        'crawler TEXT,'
+                        'infos TEXT'
+                    ');')
+
         Crawler.db = self
         for cls in Crawler.__subclasses__():
             setattr(self, 'crawler_' + cls.name(), cls())
-        # o loop acima iniciará todas as subclasses diretas de Crawler e inicializará, como por exemplo:
-        # self.crawler_etufor = CrawlerEtufor()
-        # self.crawler_qselecao = CrawlerQSelecao()
+            if cls.trigger.__code__ != Crawler.trigger.__code__:
+                if len(self.execute("SELECT * FROM trigger WHERE crawler=?", (cls.name(),)).fetchall()) == 0:
+                    self.execute('INSERT INTO trigger (crawler) VALUES (?)', (cls.name(),))
+
+        if trigger:
+            start_triggers()
 
         # salvar as mudanças no banco
         self.commit()

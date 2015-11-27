@@ -48,17 +48,47 @@ class CrawlerQSelecao(Crawler):
     def crop():
         return 'name', 'identity', 'birthday_day', 'birthday_month', 'birthday_year',
 
+    @staticmethod
+    def __get_cod_concursos():
+        phantom = webdriver.PhantomJS()
+
+        phantom.get('http://qselecao.ifce.edu.br/lista_concursos.aspx')
+        links_elements = phantom.execute_script("return $('#ctl00_ContentPlaceHolderPrincipal_grvLocaisProva a, #ctl00_ContentPlaceHolderPrincipal_grvResultados a, #ctl00_ContentPlaceHolderPrincipal_grvEncerrados a')")
+        regex_get_cod_concurso = re.compile(r'cod_concurso=(\d+)')
+        return [int(regex_get_cod_concurso.search(i.get_attribute('href')).group(1)) for i in links_elements]
+
+    @classmethod
+    def trigger(cls, table_row):
+        import time
+        import json
+
+        if table_row.value() is None:
+            cls.harvest()
+
+            list_cod_concurso = cls.__get_cod_concursos()
+            table_row.update(json.dumps(list_cod_concurso))
+            time.sleep(3600 * 24 * 30)
+
+        while True:
+            list_cod_concurso_now = cls.__get_cod_concursos()
+            list_cod_concurso_previous = json.loads(table_row.value())
+
+            diff = list(set(list_cod_concurso_now) - set(list_cod_concurso_previous))
+
+            for i in diff:
+                cls.harvest(specifc_concurso=i)
+
+            table_row.update(json.dumps(list_cod_concurso_now))
+
+            time.sleep(3600 * 24 * 30)
+
     # salva no banco todos dados de todos os candidatos de todos os concursos ou do concurso especificado
     # todo: salvar no banco os cocnursos já lidos, já isso precisará ser criada uma tabela especial, a tabela do anythingCollector com as configs dele
     @classmethod
     def harvest(cls, specifc_concurso=None):
         # retorna todos os id de candidatos de concursos
         def crawler_all_qselecao_concursos():
-            phantom = webdriver.PhantomJS()
-            phantom.get('http://qselecao.ifce.edu.br/lista_concursos.aspx')
-            links_elements = phantom.execute_script("return $('#ctl00_ContentPlaceHolderPrincipal_grvLocaisProva a, #ctl00_ContentPlaceHolderPrincipal_grvResultados a, #ctl00_ContentPlaceHolderPrincipal_grvEncerrados a')")
-            regex_get_cod_concurso = re.compile(r'cod_concurso=(\d+)')
-            list_cod_concurso = [int(regex_get_cod_concurso.search(i.get_attribute('href')).group(1)) for i in links_elements]
+            list_cod_concurso = cls.__get_cod_concursos()
 
             list_to_return = []
             for i in list_cod_concurso:
