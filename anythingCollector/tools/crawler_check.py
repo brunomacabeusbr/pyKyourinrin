@@ -26,6 +26,14 @@ class CrawlerFak:
     @abstractmethod
     def create_my_table(self): pass
 
+    @staticmethod
+    def read_my_secondary_tables():
+        return ()
+
+    @staticmethod
+    def secondary_tables_export():
+        return ()
+
     @classmethod
     def update_my_table(cls, id, column_and_value, table=None): pass
 
@@ -45,11 +53,18 @@ class CrawlerFak:
     def crop(): pass
 
     @classmethod
+    def trigger(cls, table_row): pass
+
+    @classmethod
     @abstractmethod
     def harvest(self, id): pass
 
 ###
 # Carregar crawler a ser testado
+if len(sys.argv) != 2:
+    print('Você precisa passar o nome do crawler a ser checado')
+    exit()
+
 file_name = sys.argv[1]
 crawler_name = 'Crawler' + file_name.title().replace('_', '')
 
@@ -66,12 +81,14 @@ print('Checando o crawler %s...' % ct_name)
 print('* Checar método create_my_table *\n')
 ct.create_my_table()
 
+list_secondary_tables_name = []
+
 if len(ct.db.get_sql_list()) == 0:
-    print('Erro: É preciso criar ao menos a tabela base do crawler!')
+    print('Erro: É preciso criar ao menos a tabela principal do crawler!')
 else:
     without_table_base = True
     table_name_outside_standard = False
-    table_base_without_column_personid = False
+    table_main_without_column_personid = False
 
     re_get_table_name = re.compile('CREATE TABLE IF NOT EXISTS (.*?)\(')
     re_check_table_name = re.compile(ct_name + '($|_.*$)')
@@ -79,29 +96,98 @@ else:
 
     for i in ct.db.get_sql_list():
         table_name = re_get_table_name.search(i).groups()[0]
+        if table_name != ct_name:
+            list_secondary_tables_name.append(table_name.replace(ct_name + '_', ''))
 
         if table_name == ct_name:
             without_table_base = False
             if re_check_column_personid.search(i) is None:
-                table_base_without_column_personid = True
+                table_main_without_column_personid = True
         elif re_check_table_name.match(table_name) is None:
             table_name_outside_standard = True
             print('Erro: A tabela %s não tem o nome conforme os padrões!' % table_name)
 
     if without_table_base:
-        print('Erro: É preciso ter uma tabela base! A tabela base tem exatamente o mesmo nome do crawler')
-    elif table_base_without_column_personid:
-        print('Erro: A table base precisa obrigatorialmente ter uma coluna chamada peopleid que é chave estrangeira para people(id)')
+        print('Erro: É preciso ter a tabela principal! A tabela principal tem exatamente o mesmo nome do crawler')
+    elif table_main_without_column_personid:
+        print('Erro: A tabela principal precisa obrigatorialmente ter uma coluna chamada peopleid que é chave estrangeira para people(id)')
 
     if table_name_outside_standard:
-        print('\nOs nomes das tabelas dos crawlers devem seguir o seguinte padrão:\n'
+        print('\nOs nomes das tabelas secundarárias dos crawlers devem seguir o seguinte padrão:\n'
               '(nome do crawler)(|_sub_nome)\n'
               'Por exemplo: são nomes válidos "%s" e "%s_sub_nome"' % (ct_name, ct_name))
 
-    if (not table_name_outside_standard) and (not without_table_base) and (not table_base_without_column_personid):
+    if (not table_name_outside_standard) and (not without_table_base) and (not table_main_without_column_personid):
         print('Nenhum erro foi encontrado')
 
+###
+# Checar método read_my_secondary_tables
+print('\n* Checar método read_my_secondary_tables *\n')
+
+read_my_secondary_tables = ct.read_my_secondary_tables()
+
+try:
+    if type(read_my_secondary_tables) != tuple:
+        print('Erro: O retorno precisa ser uma tupla')
+        raise Exception
+
+    for i in read_my_secondary_tables:
+        if type(i) != dict:
+            print('Erro: Os elementos da tupla de retorno do read_my_secondary_tables precisam ser um dicionário')
+            raise Exception
+
+        if 'table' not in i:
+            print('Erro: Os elementos da tupla precisam ter o table')
+        elif i['table'] == ct_name:
+            print('Erro: Não deve-se especificar como ler a tabela principal, pois isso já é implícito')
+        elif i['table'] not in list_secondary_tables_name:
+            print('Erro: Não encontrei a tabela %s' % i['table'])
+
+        if 'reference_column' in i:
+            if type(i['reference_column']) != tuple or len(i['reference_column']) != 2:
+                print('Erro: reference_column precisa ser uma tupla com dois elementos, sendo o primeiro o nome da tabela e o segundo a coluna que servirá para unirem')
+
+        for i2 in i.keys():
+            if i2 != 'table' and i2 != 'reference_column':
+                print('Erro: Não sei o que fazer com %s' % i2)
+
+    if len(ct.db.get_sql_list()) > len(read_my_secondary_tables) + 1:
+        print('Erro: No método read_my_secondary_tables, ele deve especificar como é a leitura de todas as tabelas secundárias')
+    elif len(ct.db.get_sql_list()) < len(read_my_secondary_tables) + 1:
+        print('Erro: No método read_my_secondary_tables, ele está com mais elementos do que o necessário')
+
+    print('Nenhum erro foi encontrado')
+finally:
+    pass
+
 ct.db.clear_sql_list()
+
+###
+# Checar método read_my_secondary_tables
+print('\n* Checar método secondary_tables_export *\n')
+
+secondary_tables_export = ct.secondary_tables_export()
+
+try:
+    if type(secondary_tables_export) != tuple:
+        print('Erro: O retorno precisa ser uma tupla')
+        raise Exception
+
+    for i in secondary_tables_export:
+        if type(i) is not dict:
+            print('Erro: Os elementos da tupla precisam ser um dicionário')
+            raise Exception
+
+        if 'column_name' not in i or 'how' not in i:
+            print('Erro: É obrigatório haver "column_name" e "how"')
+
+        for i2 in i.keys():
+            if i2 != 'column_name' and i2 != 'how':
+                print('Erro: Não sei o que fazer com %s' % i2)
+
+    print('Nenhum erro foi encontrado')
+finally:
+    pass
 
 ###
 # Checar método dependencies
@@ -113,7 +199,7 @@ if type(ct.dependencies()) != tuple:
     print('Erro: As depedências sempre precisam ser uma tupla')
     dependencies_fail = True
 else:
-    have_dependencies = len(ct.dependencies()) > 0
+    have_dependencies = ct.dependencies()[0] != ''
 
     multiple_dependence_routes = type(ct.dependencies()[0]) == tuple
     dependencies_outside_standard = False
@@ -171,9 +257,12 @@ if dependencies_fail:
 else:
     harvest_all_right = True
 
+    # Remover o método harvest do partial harvest_and_commit
+    ct.harvest = ct.harvest.args[0]
+
+    # Devido ao decorator implícito de recolher as depedências, o método harvest pode acabar tornando-se objeto da classe GetDependencies
+    # Aqui revertermos isso
     if ct.harvest.__class__.__name__ == 'GetDependencies':
-        # Devido ao decorator implícito de recolher as depedências, o método harvest pode acabar tornando-se objeto da classe GetDependencies
-        # Aqui revertermos isso, para facilitar a análise
         ct.harvest = ct.harvest.harvest
 
     harvest_args = inspect.getargspec(ct.harvest).args
