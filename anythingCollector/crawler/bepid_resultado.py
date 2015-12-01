@@ -1,8 +1,6 @@
 from . import Crawler
-import requests
-import os
 import re
-from PyPDF2 import PdfFileReader
+import tools.pdf
 
 
 class CrawlerBepidResultado(Crawler):
@@ -11,7 +9,8 @@ class CrawlerBepidResultado(Crawler):
                             'peopleid INTEGER,'
                             'bepid_position INTEGER,'
                             'bepid_score INTEGER,'
-                            'bepid_ranked INTEGER,'
+                            'bepid_ranked_first INTEGER,'
+                            'bepid_ranked_second INTEGER,'
                             'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
                         ');' % self.name())
 
@@ -31,25 +30,26 @@ class CrawlerBepidResultado(Crawler):
     def harvest(cls, id=None, dependencies=None):
         # Aviso: Antes de colher aqui, deve-se user ManagerDatabase().crawler_qselecao.harvest(specifc_concurso=2890)
 
-        r = requests.get('http://www.bepid.ifce.edu.br/resultado_prova_selecao.pdf')
-        with open('myfile.pdf', 'wb') as f:
-            for chunk in r.iter_content(chunk_size=1024):
-                if chunk:
-                    f.write(chunk)
+        # First stage
+        content_first = tools.pdf.pypdf_extract_text_from_url('http://www.bepid.ifce.edu.br/resultado_prova_selecao.pdf')
+        content_first = ' '.join(content_first.replace('\xa0', ' ').strip().split())
 
-        f = open('myfile.pdf', 'rb')
-        reader = PdfFileReader(f)
-        content = ''
-        for i in reader.pages:
-            content += i.extractText()
-        f.close()
-        os.remove('myfile.pdf')
-        content = ' '.join(content.replace('\xa0', ' ').strip().split())
+        regexp_first = re.compile(r'(\d+)(\D+) (\d{2})\/(\d{2})\/(\d{4})(\d+,\d)(\w+)')
 
-        regexp = re.compile(r'(\d+)(\D+) (\d{2})\/(\d{2})\/(\d{4})(\d+,\d)(\w+)')
+        # Second stage
+        pdf_text_second_stage = tools.pdf.pdfminer_extract_text_from_url('http://www.bepid.ifce.edu.br/bepid_selecionados_2016.pdf')
+        pdf_text_second_stage = pdf_text_second_stage.replace('\t', ' ')
 
-        for i in regexp.findall(content):
+        regexp_second = re.compile(r'\d\s\s(.*)')
+
+        ranked_second_stage = regexp_second.findall(pdf_text_second_stage)[:37]
+        ranked_second_stage = [i.strip() for i in ranked_second_stage]
+
+        # Save
+        for i in regexp_first.findall(content_first):
             tableid = cls.db.get_tableid_of_people({'name': i[1], 'birthday_day': i[2] , 'birthday_month': i[3], 'birthday_year': i[4]})
 
-            cls.update_my_table(tableid, {'position': i[0], 'score': float(i[5].replace(',', '.')), 'ranked': (0, 1)[i[6] == 'Classificado']})
+            cls.update_my_table(tableid, {'bepid_position': i[0], 'bepid_score': float(i[5].replace(',', '.')),
+                                          'bepid_ranked_first': (0, 1)[i[6] == 'Classificado'],
+                                          'bepid_ranked_second': (0, 1)[i[1] in ranked_second_stage]})
             cls.update_crawler(tableid, 1)
