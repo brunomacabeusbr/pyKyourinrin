@@ -21,6 +21,14 @@ class Crawler""" + crawler_name_camel_case + """(Crawler):
                         ');' % self.name())
 
     @staticmethod
+    def read_my_secondary_tables():
+        return ()
+
+    @staticmethod
+    def secondary_tables_export():
+        return ()
+
+    @staticmethod
     def name():
         return '""" + crawler_name_underscore + """'
 

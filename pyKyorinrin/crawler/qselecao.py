@@ -83,7 +83,6 @@ class CrawlerQSelecao(Crawler):
             time.sleep(3600 * 24 * 30)
 
     # salva no banco todos dados de todos os candidatos de todos os concursos ou do concurso especificado
-    # todo: salvar no banco os cocnursos já lidos, já isso precisará ser criada uma tabela especial, a tabela do anythingCollector com as configs dele
     @classmethod
     def harvest(cls, specifc_concurso=None):
         # retorna todos os id de candidatos de concursos

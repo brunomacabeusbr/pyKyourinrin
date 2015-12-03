@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='anythingCollector',
+    name='pyKyorinrin',
     install_requires=[
         'requests',
         'PyPDF2',
@@ -10,5 +10,5 @@ setup(
         'matplotlib'
         # todo: precisa exigir o phantomjs
     ],
-    packages=['anythingCollector']
+    packages=['pyKyorinrin']
 )
