@@ -25,10 +25,10 @@ class CrawlerQSelecao(Crawler):
         )
 
     @staticmethod
-    def secondary_tables_export():
-        def lister_public_tender(readed):
-            if len(readed['public_tender']) > 0:
-                return readed['public_tender']
+    def column_export():
+        def lister_public_tender(read):
+            if len(read['public_tender']) > 0:
+                return read['public_tender']
             else:
                 return None
 

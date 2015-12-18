@@ -56,24 +56,24 @@ class ManagerDatabase:
     def lastrowid(self):
         return self.c.lastrowid
 
-    def select_column_and_value(self, sql, parameters=()):
+    def select_column_and_value(self, sql, parameters=(), discard=[]):
         execute = self.execute(sql, parameters)
         fetch = execute.fetchone()
 
         if fetch is None:
             return {k[0]: None for k in execute.description}
 
-        return {k[0]: v for k, v in list(zip(execute.description, fetch))}
+        return {k[0]: v for k, v in list(zip(execute.description, fetch)) if k[0] not in discard}
 
     # todo: talvez possa juntar esse método com o de cima
-    def select_column_and_value_many(self, sql, parameters=()):
+    def select_column_and_value_many(self, sql, parameters=(), discard=[]):
         execute = self.execute(sql, parameters)
         fetch = execute.fetchall()
 
         to_return = []
 
         for i in fetch:
-            to_return.append({k[0]: v for k, v in list(zip(execute.description, i))})
+            to_return.append({k[0]: v for k, v in list(zip(execute.description, i)) if k[0] not in discard})
 
         return to_return
 
@@ -104,9 +104,7 @@ class ManagerDatabase:
                          ' AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in filter.items()))
 
     def crawler_list_status(self, id):
-        fieldnames = self.select_column_and_value('SELECT * FROM crawler WHERE peopleid=?', (id,))
-        del fieldnames['peopleid']
-        return fieldnames
+        return self.select_column_and_value('SELECT * FROM crawler WHERE peopleid=?', (id,), discard=['peopleid'])
 
     def crawler_list_used(self, id):
         return {k: v for k, v in self.crawler_list_status(id).items() if v != 0}
@@ -116,27 +114,23 @@ class ManagerDatabase:
 
     def get_people_info_all(self, id):
         # Recolher dados da tabela peoples
-        fieldnames = self.select_column_and_value("SELECT * FROM peoples WHERE id=?", (id,))
+        fieldnames = self.select_column_and_value("SELECT * FROM peoples WHERE id=?", (id,), discard=['id', 'peopleid'])
 
         # Recolher dados da tabela dos crawlers
         crawler_list_success = self.crawler_list_success(id)
         for cls in Crawler.__subclasses__():
             # Tabela principal
-            dict_infos = self.select_column_and_value("SELECT * FROM %s WHERE peopleid=?" % cls.name(), (id,))
+            dict_infos = self.select_column_and_value("SELECT * FROM %s WHERE peopleid=?" % cls.name(), (id,), discard=['peopleid'])
+            dict_infos = {k: v for k, v in dict_infos.items() if not(k in fieldnames and v is None)}
             fieldnames.update(dict_infos)
 
             # Tabelas secundárias
             if cls.name() in crawler_list_success:
-                list_tables_diretas = []
-
                 for current in cls.read_my_secondary_tables():
                     table = current['table']
 
                     if 'reference_column' not in current.keys():
-                        list_tables_diretas.append(table)
-                        x = self.select_column_and_value_many("SELECT * FROM %s WHERE peopleid=?" % (cls.name() + '_' + table), (id,))
-                        for i in x:
-                            del i['peopleid']
+                        x = self.select_column_and_value_many("SELECT * FROM %s WHERE peopleid=?" % (cls.name() + '_' + table), (id,), discard=['peopleid'])
 
                         dict_infos.update({table: x})
                     else:
@@ -145,22 +139,17 @@ class ManagerDatabase:
 
                         for i in dict_infos[cls.name() + '_' + reference_table]:
                             referenceid = i[reference_column]
-                            x = self.select_column_and_value_many("SELECT * FROM %s WHERE %s=?" % (cls.name() + '_' + table, reference_column), (referenceid,))
-                            for i2 in x:
-                                del i2['peopleid']
+                            x = self.select_column_and_value_many("SELECT * FROM %s WHERE %s=?" % (cls.name() + '_' + table, reference_column), (referenceid,), discard=['peopleid'])
 
                             i[reference_column] = x
 
-                for current in cls.secondary_tables_export():
+                for current in cls.column_export():
                     fieldnames[current['column_name']] = current['how'](dict_infos)
             else:
-                for current in cls.secondary_tables_export():
+                for current in cls.column_export():
                     fieldnames[current['column_name']] = None
 
         #
-        del fieldnames['id']
-        del fieldnames['peopleid']
-
         return fieldnames
 
     def get_dependencies(self, id, *dependencies):

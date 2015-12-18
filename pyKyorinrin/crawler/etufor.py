@@ -31,10 +31,10 @@ class CrawlerEtufor(Crawler):
         )
 
     @staticmethod
-    def secondary_tables_export():
-        def last_school_name(readed):
-            if len(readed['records_school']) > 0:
-                return readed['records_school'][-1]['school']
+    def column_export():
+        def last_school_name(read):
+            if len(read['records_school']) > 0:
+                return read['records_school'][-1]['school']
             else:
                 return None
 

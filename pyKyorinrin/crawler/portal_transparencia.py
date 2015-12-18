@@ -48,23 +48,23 @@ class CrawlerPortalTransparencia(Crawler):
         )
 
     @staticmethod
-    def secondary_tables_export():
-        def salary_average(readed):
+    def column_export():
+        def salary_average(read):
             salary_total = 0
-            for i in readed['remuneration_date']:
+            for i in read['remuneration_date']:
                 for i2 in i['remunerationid']:
                     salary_total += i2['value']
 
-            return salary_total / len(readed['remuneration_date'])
+            return salary_total / len(read['remuneration_date'])
 
-        def job(readed):
+        def job(read):
             # Retorna o emprego principal da pessoa.
             # No caso de pessoas com mais de uma função, a prioridade segue a seguinte ordem considerando o type_contract:
             # Posto/Graduação > Cargo Emprego > Demais situações - agentes públicos > Função ou Cargo de Confiança
             priority = {'Posto/Graduação': 0, 'Cargo Emprego': 1, 'Demais situações - agentes públicos': 2, 'Função ou Cargo de Confiança': 3}
 
             vou_ler = None
-            for i in readed['job']:
+            for i in read['job']:
                 if vou_ler is None:
                     vou_ler = i
                 else:

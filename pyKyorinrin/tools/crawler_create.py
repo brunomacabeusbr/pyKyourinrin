@@ -25,7 +25,7 @@ class Crawler""" + crawler_name_camel_case + """(Crawler):
         return ()
 
     @staticmethod
-    def secondary_tables_export():
+    def column_export():
         return ()
 
     @staticmethod

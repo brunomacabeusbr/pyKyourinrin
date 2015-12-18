@@ -22,7 +22,7 @@ class Crawler:
         return ()
 
     @staticmethod
-    def secondary_tables_export():
+    def column_export():
         return ()
 
     @classmethod

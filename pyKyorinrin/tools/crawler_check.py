@@ -31,7 +31,7 @@ class CrawlerFak:
         return ()
 
     @staticmethod
-    def secondary_tables_export():
+    def column_export():
         return ()
 
     @classmethod
@@ -164,16 +164,16 @@ ct.db.clear_sql_list()
 
 ###
 # Checar método read_my_secondary_tables
-print('\n* Checar método secondary_tables_export *\n')
+print('\n* Checar método column_export *\n')
 
-secondary_tables_export = ct.secondary_tables_export()
+column_export = ct.column_export()
 
 try:
-    if type(secondary_tables_export) != tuple:
+    if type(column_export) != tuple:
         print('Erro: O retorno precisa ser uma tupla')
         raise Exception
 
-    for i in secondary_tables_export:
+    for i in column_export:
         if type(i) is not dict:
             print('Erro: Os elementos da tupla precisam ser um dicionário')
             raise Exception
