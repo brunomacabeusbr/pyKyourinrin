@@ -1,10 +1,10 @@
 import copy
 import numpy as np
 import cv2 as cv
-import yapyclibtesseract
+import pyslibtesseract
 import os
 
-tesseract_config = yapyclibtesseract.TesseractConfig(psm=yapyclibtesseract.PageSegMode.PSM_SINGLE_CHAR)
+tesseract_config = pyslibtesseract.TesseractConfig(psm=pyslibtesseract.PageSegMode.PSM_SINGLE_CHAR)
 tesseract_config.add_variable('tessedit_char_whitelist', 'QWERTYUIOPASDFGHJKLZXCVBNM')
 
 
@@ -129,7 +129,7 @@ def rotate(file_name):
 
         cv.imwrite(str(i) + file_name, dst)
 
-        x = yapyclibtesseract.LibTesseract.read_and_get_confidence(tesseract_config, str(i) + file_name)
+        x = pyslibtesseract.LibTesseract.read_and_get_confidence_char(tesseract_config, str(i) + file_name)
         if len(x) == 0:
             continue
         new_char = x[0]
@@ -162,7 +162,7 @@ def rotate(file_name):
 
             cv.imwrite(str(i) + file_name, dst)
 
-            x = yapyclibtesseract.LibTesseract.read_and_get_confidence(tesseract_config, str(i) + file_name)
+            x = pyslibtesseract.LibTesseract.read_and_get_confidence_char(tesseract_config, str(i) + file_name)
             if len(x) == 0:
                 continue
             new_char = x[0]

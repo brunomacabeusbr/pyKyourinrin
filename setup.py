@@ -7,7 +7,8 @@ setup(
         'PyPDF2',
         'selenium',
         'networkx',
-        'matplotlib'
+        'matplotlib',
+        'pyslibtesseract'
         # todo: precisa exigir o phantomjs
     ],
     packages=['pyKyorinrin']
