@@ -20,19 +20,28 @@ class ManagerDatabase:
                         'identity TEXT,'
                         'cpf TEXT,'
                         'name_monther TEXT'
-                    ');')
+                     ');')
 
         # table crawler: se já colheu determinada fonte; 0 ainda não tentou colher, 1 colheu e deu certo, -1 falha ao tentar colher
         self.execute('CREATE TABLE IF NOT EXISTS crawler('
                         'peopleid INTEGER,'
                         'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
-                    ');')
+                     ');')
+
+        # table arbitrary: permitir setar valores não obtidos através dos crawlers à peoples
+        self.execute('CREATE TABLE IF NOT EXISTS arbitrary('
+                        'peopleid INTEGER,'
+                        'column_name TEXT,'
+                        'column_value TEXT,'
+                        'column_set_integer INTEGER DEFAULT 0,'
+                        'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
+                     ');')
 
         # Iniciar crawlers
         self.execute('CREATE TABLE IF NOT EXISTS trigger('
                         'crawler TEXT,'
                         'infos TEXT'
-                    ');')
+                     ');')
 
         Crawler.db = self
         for cls in Crawler.__subclasses__():
@@ -148,6 +157,20 @@ class ManagerDatabase:
             else:
                 for current in cls.column_export():
                     fieldnames[current['column_name']] = None
+
+        # Recolher dados da tabela arbitrary
+        def get_value_typed(j):
+            if j['column_set_integer'] and j['column_value'] is not None:
+                return int(j['column_value'])
+            else:
+                return j['column_value']
+
+        fieldnames.update(
+            {
+                i['column_name']: get_value_typed(i) for i in
+                self.select_column_and_value_many("SELECT * FROM arbitrary WHERE peopleid=?", (id,), discard=['peopleid'])
+            }
+        )
 
         #
         return fieldnames
