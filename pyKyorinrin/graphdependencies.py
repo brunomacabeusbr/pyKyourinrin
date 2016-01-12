@@ -32,7 +32,7 @@ class GraphDependencies:
                     self.graph.add_node(current_crop)
 
         ###
-        # crir edges da depedência para a info que colhe
+        # criar edges da depedência para a info que colhe
         # os edges é um crawler ligando uma info à outra info, na ordem dependence -> crop
         for current_crawler in list_crawler:
             if current_crawler.have_dependencies() is False:
@@ -153,24 +153,25 @@ class GraphDependencies:
 gd = GraphDependencies()
 
 
-class GraphDependenciesOfThisPeople:
-    def __init__(self, db, id):
-        self.id = id
+class GraphDependenciesOfPrimitiveRow:
+    def __init__(self, db, primitive_id, primitive_name):
+        self.primitive_id = primitive_id
+        self.primitive_name = primitive_name
         self.db = db
         self.gd = gd.graph.copy()
         self.pos = gd.pos
 
         ###
         # apagar edges de crawlers já usados
-        crawler_list_used = self.db.crawler_list_used(self.id)
+        crawler_list_used = self.db.crawler_list_used(self.primitive_id, self.primitive_name)
         for k in crawler_list_used.keys():
             [self.gd.remove_edge(*i) for i in self.gd.edges()
              if self.gd.get_edge_data(*i)['crawler'].name() == k]
 
         ###
         # marcar nodes com dados já obtidos
-        people_status = self.db.get_people_info_all(self.id)
-        for k, v in people_status.items():
+        infos = self.db.get_primitive_row_info_all(self.primitive_id, self.primitive_name)
+        for k, v in infos.items():
             if k not in self.gd.node:
                 continue
 
@@ -201,7 +202,7 @@ class GraphDependenciesOfThisPeople:
 
         plt.legend(handles=edges_patches)
 
-        plt.savefig("graph_people.png")
+        plt.savefig("graph_primitive_row.png")
         plt.show()
 
     def is_dependence_reachable(self, target, exclude_crawler=None):
@@ -229,14 +230,14 @@ class GraphDependenciesOfThisPeople:
         # será chamado novamente esse mesmo código
 
         for i in crawlers_to_target:
-            i.harvest(id=self.id)
+            i.harvest(**{'primitive_' + self.primitive_name: self.primitive_id})
 
             # Conseguiu colher o dado desejado? Se sim, para o loop
-            if self.db.get_dependencies(self.id, target)[target] is not None:
+            if self.db.get_dependencies(self.primitive_id, self.primitive_name, target)[target] is not None:
                 break
 
         # Retornar se teve sucesso em recolher a depedência desejada
-        if self.db.get_dependencies(self.id, target)[target] is not None:
+        if self.db.get_dependencies(self.primitive_id, self.primitive_name, target)[target] is not None:
             return True
         else:
             return False

@@ -6,12 +6,11 @@ import tools.pdf
 class CrawlerBepidResultado(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'peopleid INTEGER,'
+                            'primitive_peoples_id INTEGER,'
                             'bepid_position INTEGER,'
                             'bepid_score INTEGER,'
                             'bepid_ranked_first INTEGER,'
-                            'bepid_ranked_second INTEGER,'
-                            'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
+                            'bepid_ranked_second INTEGER'
                         ');' % self.name())
 
     @staticmethod
@@ -26,8 +25,12 @@ class CrawlerBepidResultado(Crawler):
     def crop():
         return 'name', 'birthday_day', 'birthday_month', 'birthday_year',
 
+    @staticmethod
+    def primitive_required():
+        return 'primitive_peoples',
+
     @classmethod
-    def harvest(cls, id=None, dependencies=None):
+    def harvest(cls):
         # Aviso: Antes de colher aqui, deve-se user ManagerDatabase().crawler_qselecao.harvest(specifc_concurso=2890)
 
         # First stage
@@ -47,9 +50,9 @@ class CrawlerBepidResultado(Crawler):
 
         # Save
         for i in regexp_first.findall(content_first):
-            tableid = cls.db.get_tableid_of_people({'name': i[1], 'birthday_day': i[2] , 'birthday_month': i[3], 'birthday_year': i[4]})
+            tableid = cls.db.get_primitive_id_by_filter({'name': i[1], 'birthday_day': i[2], 'birthday_month': i[3], 'birthday_year': i[4]}, 'primitive_peoples')
 
-            cls.update_my_table(tableid, {'bepid_position': i[0], 'bepid_score': float(i[5].replace(',', '.')),
+            cls.update_my_table(tableid, 'primitive_peoples', {'bepid_position': i[0], 'bepid_score': float(i[5].replace(',', '.')),
                                           'bepid_ranked_first': (0, 1)[i[6] == 'Classificado'],
                                           'bepid_ranked_second': (0, 1)[i[1] in ranked_second_stage]})
-            cls.update_crawler(tableid, 1)
+            cls.update_crawler(tableid, 'primitive_peoples', 1)

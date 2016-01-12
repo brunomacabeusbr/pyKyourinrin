@@ -8,9 +8,8 @@ from PyPDF2 import PdfFileReader
 class CrawlerSspds(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'peopleid INTEGER,'
-                            'registrocriminal TEXT,'
-                            'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
+                            'primitive_peoples_id INTEGER,'
+                            'registrocriminal TEXT'
                         ');' % self.name())
 
     @staticmethod
@@ -25,8 +24,12 @@ class CrawlerSspds(Crawler):
     def crop():
         return 'cpf', 'registrocriminal',
 
+    @staticmethod
+    def primitive_required():
+        return 'primitive_peoples',
+
     @classmethod
-    def harvest(cls, id=None, dependencies=None):
+    def harvest(cls, primitive_peoples=None, dependencies=None):
         r2 = requests.post('http://www.sspds.ce.gov.br/AtestadoAntecedentes/AtestadoPesquisa.do?action=pesquisar',
                       {'numRg': str(dependencies['identity']), 'nome': dependencies['name'], 'dataNasc': '{:02}'.format(dependencies['birthday_day']) + '/' + '{:02}'.format(dependencies['birthday_month']) + '/' + '{:02}'.format(dependencies['birthday_year']), 'mae': dependencies['name_monther']})
 
@@ -46,9 +49,9 @@ class CrawlerSspds(Crawler):
             document, people_cpf, people_antecedentes = regexp_antecedentes.search(contents).groups()
 
             if document == 'CPF':
-                cls.db.update_people({'name': dependencies['name']}, {'cpf': people_cpf})
+                cls.db.update_primitive_row({'id': primitive_peoples}, 'primitive_peoples', {'cpf': people_cpf})
 
-            cls.update_my_table(id, {'registrocriminal': people_antecedentes})
-            cls.update_crawler(id, 1)
+            cls.update_my_table(primitive_peoples, 'primitive_peoples', {'registrocriminal': people_antecedentes})
+            cls.update_crawler(primitive_peoples, 'primitive_peoples', 1)
         else:
-            cls.update_crawler(id, -1)
+            cls.update_crawler(primitive_peoples, 'primitive_peoples', -1)

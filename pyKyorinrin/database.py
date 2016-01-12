@@ -5,51 +5,89 @@ from crawler import Crawler, start_triggers
 class ManagerDatabase:
     def __init__(self, trigger=True):
         import os
-        self.con = sqlite3.connect(os.path.dirname(__file__) + "/mydatabase.db", check_same_thread=False)
+        path_pykyorinrin = os.path.dirname(__file__)
+        self.con = sqlite3.connect(path_pykyorinrin + '/mydatabase.db', check_same_thread=False)
 
         self.c = self.con.cursor()
 
-        # table peoples: informações básicas
-        self.execute('CREATE TABLE IF NOT EXISTS peoples('
-                        'id INTEGER PRIMARY KEY AUTOINCREMENT,'
-                        'name TEXT,'
-                        'name_social TEXT,'
-                        'birthday_day INTEGER,'
-                        'birthday_month INTEGER,'
-                        'birthday_year INTEGER,'
-                        'identity TEXT,'
-                        'cpf TEXT,'
-                        'name_monther TEXT'
-                     ');')
+        ###
+        # criar/atualizar banco de dados
 
-        # table crawler: se já colheu determinada fonte; 0 ainda não tentou colher, 1 colheu e deu certo, -1 falha ao tentar colher
-        self.execute('CREATE TABLE IF NOT EXISTS crawler('
-                        'peopleid INTEGER,'
-                        'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
-                     ');')
+        # criar tabelas das primitives com base nos xml
+        import xml.etree.ElementTree as ET
 
-        # table arbitrary: permitir setar valores não obtidos através dos crawlers à peoples
-        self.execute('CREATE TABLE IF NOT EXISTS arbitrary('
-                        'peopleid INTEGER,'
+        for current_xml in os.listdir(path_pykyorinrin + '/primitives/'):
+            xml_root = ET.parse('primitives/' + current_xml).getroot()
+            columns = [(current_xml.find('name').text, current_xml.find('type').text) for current_xml in xml_root.findall('column')]
+
+            primitive_name = current_xml[:-4]
+            self.execute(
+                'CREATE TABLE IF NOT EXISTS {}('
+                    'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+                    '{}'
+                ');'.format('primitive_' + primitive_name,
+                            ','.join([i[0] + ' ' + i[1] for i in columns]))
+            )
+
+            self.execute(
+                'CREATE TABLE IF NOT EXISTS {}('
+                    'id INTEGER,'
+                    'FOREIGN KEY(id) REFERENCES {}(id)'
+                ');'.format('primitive_' + primitive_name + '_crawler',
+                            'primitive_' + primitive_name)
+            )
+
+        # Atualizar tabela primitive_##name_crawler de acordo com os cralwers que requerem determinada primitive
+        tables_primitive_list = [
+            i[0] for i in self.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+            if i[0][:9] == 'primitive' and i[0][-7:] != 'crawler'
+        ]
+
+        for cls in Crawler.__subclasses__():
+            primitive_required = cls.primitive_required()
+            for i in primitive_required:
+                if i not in tables_primitive_list:
+                    raise ValueError('O crawler "{}" requer a primitiva desconhecida "{}"'.format(cls.name(), i))
+
+                try:
+                    self.execute('ALTER TABLE {} ADD COLUMN {} INTEGER DEFAULT 0;'.format(i + '_crawler', cls.name()))
+                except:
+                     # coluna já existe
+                    pass
+
+        # table main_arbitrary: permitir setar valores arbitrários
+        self.execute('CREATE TABLE IF NOT EXISTS main_arbitrary('
+                        'primitive_id INTEGER,'
+                        'primitive_name TEXT,'
                         'column_name TEXT,'
                         'column_value TEXT,'
-                        'column_set_integer INTEGER DEFAULT 0,'
-                        'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
+                        'column_set_integer INTEGER DEFAULT 0'
                      ');')
 
-        # Iniciar crawlers
-        self.execute('CREATE TABLE IF NOT EXISTS trigger('
+        # table main_linker_primitives: relacionar dois elementos de primitives diferentes
+        # todo: preciso limitar para um determinado par de "first_id" e "first_name" não possa repetir dois "second_name"
+        self.execute('CREATE TABLE IF NOT EXISTS main_linker_primitives('
+                        'first_id INTEGER,'
+                        'first_name TEXT,'
+                        'second_id INTEGER,'
+                        'second_name TEXT'
+                     ');')
+
+        # table main_trigger: usada para armazanar dados de configuração e temporização dos triggers
+        self.execute('CREATE TABLE IF NOT EXISTS main_trigger('
                         'crawler TEXT,'
                         'infos TEXT'
                      ');')
 
+        # Deixar crawlers pronto para serem usados e atualizar a tabela main_trigger
         Crawler.db = self
         for cls in Crawler.__subclasses__():
             setattr(self, 'crawler_' + cls.name(), cls())
             if cls.trigger.__code__ != Crawler.trigger.__code__:
-                if len(self.execute("SELECT * FROM trigger WHERE crawler=?", (cls.name(),)).fetchall()) == 0:
-                    self.execute('INSERT INTO trigger (crawler) VALUES (?)', (cls.name(),))
+                if len(self.execute("SELECT * FROM main_trigger WHERE crawler=?", (cls.name(),)).fetchall()) == 0:
+                    self.execute('INSERT INTO main_trigger (crawler) VALUES (?)', (cls.name(),))
 
+        # Executar crawlers trigáveis, se assim foi configurado
         if trigger:
             start_triggers()
 
@@ -86,50 +124,63 @@ class ManagerDatabase:
 
         return to_return
 
-    def count_people_with_this_filters(self, filter):
-        # todo: só filtra com base nos dados da tabela peoples
-        return len(self.execute("SELECT * FROM peoples WHERE %s" %
-                                ' AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in filter.items())).fetchall())
+    def count_primitive_rows_with_this_filters(self, primitive_filter, primitive_name):
+        # todo: só filtra com base nos dados da tabela pricipal da primitive
+        return len(self.execute("SELECT * FROM %s WHERE %s" %
+                                (primitive_name,
+                                 'AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in primitive_filter.items()))).fetchall())
 
-    def people_exists(self, filter):
-        return self.count_people_with_this_filters(filter) > 0
+    def new_primitive_row(self, primitive_infos, primitive_name): # todo: esse parâmetro primitive_name foge dos padrões, pois precisa ser o "primitive_##name"
+        primitive_infos = {k: '"' + str(v) + '"' for k, v in primitive_infos.items()}
+        self.execute('INSERT INTO ' + primitive_name + ' (' + ','.join(primitive_infos.keys()) + ') VALUES (' + ','.join(primitive_infos.values()) + ')')
+        self.execute('INSERT INTO ' + primitive_name + '_crawler (id) VALUES (?)', (self.lastrowid(),))
 
-    def new_people(self, filter):
-        filter = {k: '"' + str(v) + '"' for k, v in filter.items()}
-        self.execute('INSERT INTO peoples (' + ','.join(filter.keys()) + ') VALUES (' + ','.join(filter.values()) + ')')
-        self.execute('INSERT INTO crawler (peopleid) VALUES (?)', (self.lastrowid(),))
-
-    def update_people(self, filter, column_and_value=None):
-        count_people = self.count_people_with_this_filters(filter)
+    def update_primitive_row(self, primitive_filter, primitive_name, column_and_value=None):
+        # Buscar qual linha da primitive deve ser atualizada, ou, se ela não existir, criará
+        count_people = self.count_primitive_rows_with_this_filters(primitive_filter, primitive_name) # todo: para otimizar, se o filtro for o id, pode pular isso aqui
         if count_people == 0:
-            self.new_people(filter)
+            self.new_primitive_row(primitive_filter, primitive_name)
         elif count_people > 1:
-            raise ValueError('Há mais que uma pessoa com os critérios fornecidos! Não sei qual eu devo atualizar')
+            raise ValueError('Há mais que uma linha com os critérios fornecidos! Não sei qual eu devo atualizar')
 
+        # Colocar as informações na linha
         if column_and_value is not None:
             column_and_value = {i: j for i, j in column_and_value.items() if j is not None}
 
-            self.execute("UPDATE peoples SET " + ','.join('{}="{}"'.format(key, val) for key, val in column_and_value.items()) + ' WHERE %s ' %
-                         ' AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in filter.items()))
+            self.execute("UPDATE " + primitive_name +
+                         " SET " + ','.join('{}="{}"'.format(key, val) for key, val in column_and_value.items()) +
+                         ' WHERE %s ' % ' AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in primitive_filter.items()))
 
-    def crawler_list_status(self, id):
-        return self.select_column_and_value('SELECT * FROM crawler WHERE peopleid=?', (id,), discard=['peopleid'])
+    def crawler_list_status(self, primitive_id, primitive_name):
+        return self.select_column_and_value(
+            'SELECT * FROM primitive_' + primitive_name + '_crawler WHERE id=?', (primitive_id,), discard=['id']
+        )
 
-    def crawler_list_used(self, id):
-        return {k: v for k, v in self.crawler_list_status(id).items() if v != 0}
+    def crawler_list_used(self, primitive_id, primitive_name):
+        return {k: v for k, v in self.crawler_list_status(primitive_id, primitive_name).items() if v != 0}
 
-    def crawler_list_success(self, id):
-        return [k for k, v in self.crawler_list_status(id).items() if v == 1]
+    def crawler_list_success(self, primitive_id, primitive_name):
+        return [k for k, v in self.crawler_list_status(primitive_id, primitive_name).items() if v == 1]
 
-    def get_people_info_all(self, id):
-        # Recolher dados da tabela peoples
-        fieldnames = self.select_column_and_value("SELECT * FROM peoples WHERE id=?", (id,), discard=['id', 'peopleid'])
+    def get_primitive_row_info_all(self, primitive_id, primitive_name):
+        # Recolher infos da tabela principal dele
+        fieldnames = self.select_column_and_value(
+            "SELECT * FROM primitive_" + primitive_name + " WHERE id=?", (primitive_id,), discard=['id']
+        )
 
-        # Recolher dados da tabela dos crawlers
-        crawler_list_success = self.crawler_list_success(id)
+        # Recolher infos da tabela dos crawlers
+        crawler_required = list(self.crawler_list_status(primitive_id, primitive_name).keys())
+        crawler_list_success = self.crawler_list_success(primitive_id, primitive_name)
         for cls in Crawler.__subclasses__():
+            # Verificar se essa primitiva usa esse crawler, para, se não usar, ignora-lo
+            if cls.name() not in crawler_required:
+                continue
+
             # Tabela principal
-            dict_infos = self.select_column_and_value("SELECT * FROM %s WHERE peopleid=?" % cls.name(), (id,), discard=['peopleid'])
+            dict_infos = self.select_column_and_value(
+                "SELECT * FROM %s WHERE %s=?" % (cls.name(), 'primitive_' + primitive_name + '_id'), (primitive_id,),
+                discard=['primitive_' + primitive_name + '_id']
+            )
             dict_infos = {k: v for k, v in dict_infos.items() if not(k in fieldnames and v is None)}
             fieldnames.update(dict_infos)
 
@@ -139,16 +190,22 @@ class ManagerDatabase:
                     table = current['table']
 
                     if 'reference_column' not in current.keys():
-                        x = self.select_column_and_value_many("SELECT * FROM %s WHERE peopleid=?" % (cls.name() + '_' + table), (id,), discard=['peopleid'])
+                        x = self.select_column_and_value_many(
+                            "SELECT * FROM %s WHERE %s=?" % (cls.name() + '_' + table, 'primitive_' + primitive_name + '_id'), (primitive_id,),
+                            discard=['primitive_' + primitive_name + '_id']
+                        )
 
                         dict_infos.update({table: x})
                     else:
                         reference_table = current['reference_column'][0]
                         reference_column = current['reference_column'][1]
 
-                        for i in dict_infos[cls.name() + '_' + reference_table]:
+                        for i in dict_infos[reference_table]:
                             referenceid = i[reference_column]
-                            x = self.select_column_and_value_many("SELECT * FROM %s WHERE %s=?" % (cls.name() + '_' + table, reference_column), (referenceid,), discard=['peopleid'])
+                            x = self.select_column_and_value_many(
+                                "SELECT * FROM %s WHERE %s=?" % (cls.name() + '_' + table, reference_column), (referenceid,),
+                                discard=['primitive_' + primitive_name + '_id']
+                            )
 
                             i[reference_column] = x
 
@@ -158,7 +215,7 @@ class ManagerDatabase:
                 for current in cls.column_export():
                     fieldnames[current['column_name']] = None
 
-        # Recolher dados da tabela arbitrary
+        # Recolher infos da tabela main_arbitrary
         def get_value_typed(j):
             if j['column_set_integer'] and j['column_value'] is not None:
                 return int(j['column_value'])
@@ -168,34 +225,46 @@ class ManagerDatabase:
         fieldnames.update(
             {
                 i['column_name']: get_value_typed(i) for i in
-                self.select_column_and_value_many("SELECT * FROM arbitrary WHERE peopleid=?", (id,), discard=['peopleid'])
+                self.select_column_and_value_many("SELECT * FROM main_arbitrary WHERE primitive_id=? and primitive_name=?", (primitive_id, primitive_name), discard=['peopleid'])
             }
         )
+
+        # Recolher infos da tabela main_linker
+        for i in self.select_column_and_value_many("SELECT second_id, second_name FROM main_linker_primitives WHERE first_id=? and first_name=?", (primitive_id, primitive_name)):
+            fieldnames[i['second_name']] = self.get_primitive_row_info_all(i['second_id'], i['second_name'])
 
         #
         return fieldnames
 
-    def get_dependencies(self, id, *dependencies):
-        return {k: v for k, v in self.get_people_info_all(id).items() if k in dependencies}
+    # Retorna um dicionário com os dados requeridos em "dependencies", porém,
+    # se algum dos dados requeridos em "dependencies" não for pertecente à primitiva, retornará apenas False
+    def get_dependencies(self, primitive_id, primitive_name, *dependencies):
+        infos = self.get_primitive_row_info_all(primitive_id, primitive_name)
+        infos_keys = list(infos.keys())
 
-    def get_tableid_of_people(self, filter):
-        count_people = self.count_people_with_this_filters(filter)
+        if len([i for i in dependencies if i not in infos_keys]) > 0:
+            return False
+
+        return {k: v for k, v in infos.items() if k in dependencies}
+
+    def get_primitive_id_by_filter(self, primitive_filter, primitive_name):
+        count_people = self.count_primitive_rows_with_this_filters(primitive_filter, primitive_name)
         if count_people == 0:
             return False
         elif count_people > 1:
-            raise ValueError('Há mais que uma pessoa com os critérios fornecidos! Não sei qual eu devo entregar o ID')
+            raise ValueError('Há mais que uma linha com os critérios fornecidos! Não sei de qual eu devo entregar o ID')
 
-        return self.execute("SELECT * FROM peoples WHERE %s" %
-                            ' AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in filter.items())).fetchone()[0]
+        return self.execute("SELECT * FROM " + primitive_name + " WHERE %s" %
+                            ' AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in primitive_filter.items())).fetchone()[0]
 
-    def get_peoples_with_criteria(self, want=[], crawler_need=None, crawler_exclude=None, restriction=None):
+    def get_primitive_row_with_criteria(self, primitive_name, want=[], crawler_need=None, crawler_exclude=None, restriction=None):
         to_return = []
 
-        for current_people in self.execute('SELECT id FROM peoples').fetchall():
-            current_id = current_people[0]
+        for current_primitive_row in self.execute('SELECT id FROM primitive_' + primitive_name).fetchall():
+            current_id = current_primitive_row[0]
 
             if crawler_need is not None:
-                list_crawler = self.crawler_list_status(current_id)
+                list_crawler = self.crawler_list_status(current_id, primitive_name)
                 pass_this_people = False
                 for i in crawler_need:
                     if list_crawler[i] != 1:
@@ -205,7 +274,7 @@ class ManagerDatabase:
                     continue
 
             if crawler_exclude is not None:
-                list_crawler = self.crawler_list_status(current_id)
+                list_crawler = self.crawler_list_status(current_id, primitive_name)
                 pass_this_people = False
                 for i in crawler_exclude:
                     if list_crawler[i] == 1:
@@ -214,8 +283,9 @@ class ManagerDatabase:
                 if pass_this_people:
                     continue
 
+            # todo: resolver caso esteja comparando um valor numérico com uma coluna cujo valor é None
             if restriction is not None:
-                dep = self.get_dependencies(current_id, *restriction.keys())
+                dep = self.get_dependencies(current_id, primitive_name, *restriction.keys())
                 pass_this_people = False
                 for k, v in dep.items():
                     if str(v).replace('.', '', 1).isdigit():
@@ -235,7 +305,7 @@ class ManagerDatabase:
 
             my_dict = {'id': current_id}
             if len(want):
-                my_dict.update({k: v for k, v in self.get_people_info_all(current_id).items() if k in want})
+                my_dict.update({k: v for k, v in self.get_primitive_row_info_all(current_id, primitive_name).items() if k in want})
 
             to_return.append(my_dict)
 

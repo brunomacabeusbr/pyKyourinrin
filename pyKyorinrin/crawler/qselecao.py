@@ -7,15 +7,13 @@ from selenium import webdriver
 class CrawlerQSelecao(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'peopleid INTEGER,'
-                            'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
+                            'primitive_peoples_id INTEGER'
                         ');' % self.name())
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                        'peopleid INTEGER,'
+                        'primitive_peoples_id INTEGER,'
                         'name_public_tender TEXT,'
-                        'course TEXT,'
-                        'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
+                        'course TEXT'
                         ');' % (self.name() + '_public_tender'))
 
     @staticmethod
@@ -81,6 +79,10 @@ class CrawlerQSelecao(Crawler):
             table_row.update(json.dumps(list_cod_concurso_now))
 
             time.sleep(3600 * 24 * 30)
+
+    @staticmethod
+    def primitive_required():
+        return 'primitive_peoples',
 
     # salva no banco todos dados de todos os candidatos de todos os concursos ou do concurso especificado
     @classmethod
@@ -171,19 +173,19 @@ class CrawlerQSelecao(Crawler):
             peopleBirthdayDay, peopleBirthdayMonth, peopleBirthdayYear = regexBirthday.search(r.text).groups()
             peopleIdentity = re.sub('[^\d]+', '', regexIdentity.search(r.text).group(1))
 
-            cls.db.update_people({'name': peopleName},
-                                 {'birthday_day': peopleBirthdayDay, 'birthday_month': peopleBirthdayMonth, 'birthday_year': peopleBirthdayYear})
+            cls.db.update_primitive_row({'name': peopleName}, 'primitive_peoples',
+                                        {'birthday_day': peopleBirthdayDay, 'birthday_month': peopleBirthdayMonth, 'birthday_year': peopleBirthdayYear})
             if peopleIdentity.isdecimal():
                 # há casos a serem lidados como em http://qselecao.ifce.edu.br/cartao_identificacao_dinamico.aspx?idcandidatoconcurso=328680&etapa=1
-                cls.db.update_people({'name': peopleName}, {'identity': peopleIdentity})
+                cls.db.update_primitive_row({'name': peopleName}, 'primitive_peoples', {'identity': peopleIdentity})
 
-            talbeid = cls.db.get_tableid_of_people({'name': peopleName})
+            tableid = cls.db.get_primitive_id_by_filter({'name': peopleName}, 'primitive_peoples')
             try:
-                cls.update_my_table(talbeid, {})
+                cls.update_my_table(tableid, 'primitive_peoples', {})
             except:
                 pass
-            cls.update_my_table(talbeid, {'name_public_tender': publicTender, 'course': course}, table='public_tender')
-            cls.update_crawler(peopleName, 1)
+            cls.update_my_table(tableid, 'primitive_peoples', {'name_public_tender': publicTender, 'course': course}, table='public_tender')
+            cls.update_crawler(tableid, 'primitive_peoples', 1)
 
         if specifc_concurso is None:
             target = crawler_all_qselecao_concursos()

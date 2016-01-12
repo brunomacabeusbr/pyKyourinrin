@@ -8,9 +8,8 @@ import json
 class CrawlerFazendaReceita(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'peopleid INTEGER,'
-                            'death_year INTEGER,'
-                            'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
+                            'primitive_peoples_id INTEGER,'
+                            'death_year INTEGER'
                         ');' % self.name())
 
     @staticmethod
@@ -25,8 +24,12 @@ class CrawlerFazendaReceita(Crawler):
     def crop():
         return 'name', 'death_year',
 
+    @staticmethod
+    def primitive_required():
+        return 'primitive_peoples',
+
     @classmethod
-    def harvest(cls, id=None, dependencies=None):
+    def harvest(cls, primitive_peoples=None, dependencies=None):
         day_month_year = '{:02}{:02}{:04}'.format(dependencies['birthday_day'], dependencies['birthday_month'], dependencies['birthday_year'])
         my_hash = hmac(b'Sup3RbP4ssCr1t0grPhABr4sil', bytes(dependencies['cpf'] + day_month_year, 'utf8'), sha1).hexdigest()
 
@@ -38,11 +41,11 @@ class CrawlerFazendaReceita(Crawler):
 
         if json_return['mensagemRetorno'] != 'OK':
             # se não dê certo, então o cpf não casa com a data de nascimento; um deles, ou ambos, estão incorretos
-            cls.update_crawler(id, -1)
+            cls.update_crawler(primitive_peoples, 'primitive_peoples', -1)
             return
 
-        cls.db.update_people({'id': id}, {'name': json_return['nome'].title()})
-        cls.update_my_table(id, {'death_year': json_return['anoObito']})
-        cls.update_crawler(id, 1)
+        cls.db.update_primitive_row({'id': primitive_peoples}, 'primitive_peoples', {'name': json_return['nome'].title()})
+        cls.update_my_table(primitive_peoples, 'primitive_peoples', {'death_year': json_return['anoObito']})
+        cls.update_crawler(primitive_peoples, 'primitive_peoples', 1)
 
         # todo: falta ainda checar a mensagem de óbito, para salvar no banco

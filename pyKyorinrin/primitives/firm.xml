@@ -1,0 +1,10 @@
+<primitive>
+    <column>
+        <name>razao_social</name>
+        <type>TEXT</type>
+    </column>
+    <column>
+        <name>cnpj</name>
+        <type>TEXT</type>
+    </column>
+</primitive>

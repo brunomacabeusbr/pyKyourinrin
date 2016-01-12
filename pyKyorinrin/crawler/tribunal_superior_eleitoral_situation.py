@@ -8,10 +8,9 @@ from tools.misc_phantom import element_image_download
 class CrawlerTribunalSuperiorEleitoralSituation(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'peopleid INTEGER,'
+                            'primitive_peoples_id INTEGER,'
                             'voter_registration TEXT,'
-                            'voter_situation_inscription TEXT,'
-                            'FOREIGN KEY(peopleid) REFERENCES peoples(id)'
+                            'voter_situation_inscription TEXT'
                         ');' % self.name())
 
     @staticmethod
@@ -26,8 +25,12 @@ class CrawlerTribunalSuperiorEleitoralSituation(Crawler):
     def crop():
         return 'voter_registration', 'voter_situation_inscription'
 
+    @staticmethod
+    def primitive_required():
+        return 'primitive_peoples',
+
     @classmethod
-    def harvest(cls, id=None, dependencies=None):
+    def harvest(cls, primitive_peoples=None, dependencies=None):
         # todo: falta considerar caso a pessoa não tenha título de eleitor
         phantom = webdriver.PhantomJS()
 
@@ -64,5 +67,5 @@ class CrawlerTribunalSuperiorEleitoralSituation(Crawler):
         regexp = re.compile(r'<\/label>\s(.*)')
         l = re.findall(regexp, x)
 
-        cls.update_my_table(id, {'voter_registration': l[0], 'voter_situation_inscription': l[3].title()})
-        cls.update_crawler(id, 1)
+        cls.update_my_table(primitive_peoples, 'primitive_peoples', {'voter_registration': l[0], 'voter_situation_inscription': l[3].title()})
+        cls.update_crawler(primitive_peoples, 'primitive_peoples', 1)

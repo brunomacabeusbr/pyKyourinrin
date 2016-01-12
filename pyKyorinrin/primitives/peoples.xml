@@ -1,0 +1,34 @@
+<primitive>
+    <column>
+        <name>name</name>
+        <type>TEXT</type>
+    </column>
+    <column>
+        <name>name_social</name>
+        <type>TEXT</type>
+    </column>
+    <column>
+        <name>birthday_day</name>
+        <type>INTEGER</type>
+    </column>
+    <column>
+        <name>birthday_month</name>
+        <type>INTEGER</type>
+    </column>
+    <column>
+        <name>birthday_year</name>
+        <type>INTEGER</type>
+    </column>
+    <column>
+        <name>identity</name>
+        <type>TEXT</type>
+    </column>
+    <column>
+        <name>cpf</name>
+        <type>TEXT</type>
+    </column>
+    <column>
+        <name>name_monther</name>
+        <type>TEXT</type>
+    </column>
+</primitive>
