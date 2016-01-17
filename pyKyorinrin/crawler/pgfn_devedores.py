@@ -42,7 +42,7 @@ class CrawlerPgfnDevedores(Crawler):
 
     @staticmethod
     def dependencies():
-        return ('name',), ('cpf',), ('cnpj',), ('razao_social'),
+        return ('name',), ('cpf',), ('cnpj',), ('razao_social',),
 
     @staticmethod
     def crop():
