@@ -189,7 +189,7 @@ class ManagerDatabase:
                 for current in cls.read_my_secondary_tables():
                     table = current['table']
 
-                    if 'reference_column' not in current.keys():
+                    if 'reference' not in current.keys():
                         x = self.select_column_and_value_many(
                             "SELECT * FROM %s WHERE %s=?" % (cls.name() + '_' + table, 'primitive_' + primitive_name + '_id'), (primitive_id,),
                             discard=['primitive_' + primitive_name + '_id']
@@ -197,8 +197,8 @@ class ManagerDatabase:
 
                         dict_infos.update({table: x})
                     else:
-                        reference_table = current['reference_column'][0]
-                        reference_column = current['reference_column'][1]
+                        reference_table = current['reference']
+                        reference_column = 'reference_' + reference_table
 
                         for i in dict_infos[reference_table]:
                             referenceid = i[reference_column]

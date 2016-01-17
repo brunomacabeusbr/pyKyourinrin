@@ -22,17 +22,17 @@ class CrawlerPortalTransparencia(Crawler):
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
                             'primitive_peoples_id INTEGER,'
-                            'remunerationid INTEGER PRIMARY KEY AUTOINCREMENT,'
+                            'reference_remuneration_date INTEGER PRIMARY KEY AUTOINCREMENT,'
                             'month INTEGER,'
                             'year INTEGER'
                         ');' % (self.name() + '_remuneration_date'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
                             'primitive_peoples_id INTEGER,'
-                            'remunerationid INTEGER,'
+                            'reference_remuneration_date INTEGER,'
                             'type TEXT,'
                             'value INTEGER,'
-                            'FOREIGN KEY(remunerationid) REFERENCES %s(remunerationid)'
+                            'FOREIGN KEY(reference_remuneration_date) REFERENCES %s(reference_remuneration_date)'
                         ');' % (self.name() + '_remuneration_info', self.name() + '_remuneration_date'))
 
     @staticmethod
@@ -40,7 +40,7 @@ class CrawlerPortalTransparencia(Crawler):
         return (
             {'table': 'job'},
             {'table': 'remuneration_date'},
-            {'table': 'remuneration_info', 'reference_column': ('remuneration_date', 'remunerationid')}
+            {'table': 'remuneration_info', 'reference': 'remuneration_date'}
         )
 
     @staticmethod
@@ -48,7 +48,7 @@ class CrawlerPortalTransparencia(Crawler):
         def salary_average(read):
             salary_total = 0
             for i in read['remuneration_date']:
-                for i2 in i['remunerationid']:
+                for i2 in i['reference_remuneration_date']:
                     salary_total += i2['value']
 
             return salary_total / len(read['remuneration_date'])
@@ -309,7 +309,7 @@ class CrawlerPortalTransparencia(Crawler):
                     ).groups()
 
                 cls.update_my_table(tableid, 'primitive_peoples', {'month': month, 'year': year}, table='remuneration_date')
-                remunerationid = cls.db.lastrowid()
+                reference_remuneration_date = cls.db.lastrowid()
 
                 remunerations_infos = phantom.execute_script(
                     """
@@ -325,7 +325,7 @@ class CrawlerPortalTransparencia(Crawler):
                 )
 
                 for i2 in remunerations_infos:
-                    cls.update_my_table(tableid, 'primitive_peoples', {'remunerationid': remunerationid, 'type': i2['type'], 'value': i2['value']}, table='remuneration_info')
+                    cls.update_my_table(tableid, 'primitive_peoples', {'reference_remuneration_date': reference_remuneration_date, 'type': i2['type'], 'value': i2['value']}, table='remuneration_info')
 
             # Finalizar
             cls.update_crawler(tableid, 'primitive_peoples', 1)
