@@ -1,0 +1,34 @@
+<crawler>
+    <primitive_required>
+        <primitive harvest_param="">peoples</primitive>
+    </primitive_required>
+
+    <database>
+        <table_main>
+            <column>
+                <name>registrocriminal</name>
+                <type>TEXT</type>
+            </column>
+        </table_main>
+    </database>
+
+    <dependencies>
+        <route>
+            <dependence>identity</dependence>
+            <dependence>name</dependence>
+            <dependence>birthday_day</dependence>
+            <dependence>birthday_month</dependence>
+            <dependence>birthday_year</dependence>
+            <dependence>name_monther</dependence>
+        </route>
+    </dependencies>
+
+    <crop>
+        <info>cpf</info>
+        <info>registrocriminal</info>
+    </crop>
+
+    <harvest>
+        <url>www.sspds.ce.gov.br/AtestadoAntecedentes/AtestadoPesquisa.do?action=pesquisar</url>
+    </harvest>
+</crawler>

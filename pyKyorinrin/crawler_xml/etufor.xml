@@ -1,0 +1,69 @@
+<crawler>
+    <primitive_required>
+        <primitive harvest_param="">peoples</primitive>
+    </primitive_required>
+
+    <database>
+        <table_main>
+            <column>
+                <name>cia</name>
+                <type>INTEGER</type>
+            </column>
+        </table_main>
+
+        <table_secondary>
+            <name>records_school</name>
+            <column>
+                <name>timestamp</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>school</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>type</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>course</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>turn</name>
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
+
+        <column_export>
+            <name>last_school_name</name>
+        </column_export>
+    </database>
+
+    <dependencies>
+        <route>
+            <dependence>name</dependence>
+            <dependence>birthday_day</dependence>
+            <dependence>birthday_month</dependence>
+            <dependence>birthday_year</dependence>
+        </route>
+        <route>
+            <dependence>cia</dependence>
+        </route>
+    </dependencies>
+
+    <crop>
+        <info>name_social</info>
+        <info>cia</info>
+        <info>name</info>
+        <info>name_monther</info>
+        <info>birthday_day</info>
+        <info>birthday_month</info>
+        <info>birthday_year</info>
+        <info>last_school_name</info>
+    </crop>
+
+    <harvest>
+        <url>http://www.etufor.ce.gov.br/index_novo.asp?pagina=sit_carteira2007.asp</url>
+    </harvest>
+</crawler>

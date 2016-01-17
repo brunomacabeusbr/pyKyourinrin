@@ -1,0 +1,85 @@
+<crawler>
+    <primitive_required>
+        <primitive harvest_param="">peoples</primitive>
+    </primitive_required>
+
+    <database>
+        <table_main>
+            <column>
+                <name>federal_employee_type</name>
+                <type>TEXT</type>
+            </column>
+        </table_main>
+
+        <table_secondary>
+            <name>job</name>
+            <column>
+                <name>type_contract</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>job</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>workplace</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>working_hours</name>
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
+
+        <table_secondary>
+            <name>remuneration_date</name>
+            <column>
+                <name>month</name>
+                <type>INTEGER</type>
+            </column>
+            <column>
+                <name>year</name>
+                <type>INTEGER</type>
+            </column>
+        </table_secondary>
+
+        <table_secondary>
+            <name>remuneration_info</name>
+            <reference>remuneration_date</reference>
+            <column>
+                <name>type</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>value</name>
+                <type>INTEGER</type>
+            </column>
+        </table_secondary>
+
+        <column_export>
+            <name>salary_average</name>
+            <name>job</name>
+        </column_export>
+    </database>
+
+    <dependencies>
+        <route>
+            <dependence>cpf</dependence>
+        </route>
+        <route>
+            <dependence>name</dependence>
+        </route>
+    </dependencies>
+
+    <crop>
+        <info>federal_employee_type</info>
+        <info>salary_average</info>
+        <info>job</info>
+    </crop>
+
+    <harvest>
+        <url>http://www.portaltransparencia.gov.br/servidores/Servidor-ListaServidores.asp</url>
+        <param_additional>specific_name</param_additional>
+        <param_additional>specific_siteid</param_additional>
+    </harvest>
+</crawler>
