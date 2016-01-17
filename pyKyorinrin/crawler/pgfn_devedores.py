@@ -42,7 +42,7 @@ class CrawlerPgfnDevedores(Crawler):
 
     @staticmethod
     def dependencies():
-        return ('name',), ('cpf',), ('cnpj',)
+        return ('name',), ('cpf',), ('cnpj',), ('razao_social'),
 
     @staticmethod
     def crop():
@@ -54,14 +54,18 @@ class CrawlerPgfnDevedores(Crawler):
 
     @classmethod
     def harvest(cls, primitive_peoples=None, primitive_firm=None, dependencies=None):
-        # todo: preciso fazer algo para evitar ter que fazer essa condição todo crawler que tiver mais que uma primitive
-        #  no cabeçalho de harvest
         if primitive_peoples is not None:
             primitive_current_id = primitive_peoples
             primitive_current_name = 'primitive_peoples'
+            def get_site_infos():
+                return {'cpf': phantom.find_element_by_id('listaDevedoresForm:devedoresTable:0:j_id80').text,
+                        'name': phantom.find_element_by_id('listaDevedoresForm:devedoresTable:0:j_id83').text}
         else:
             primitive_current_id = primitive_firm
             primitive_current_name = 'primitive_firm'
+            def get_site_infos():
+                return {'cnpj': phantom.find_element_by_id('listaDevedoresForm:devedoresTable:0:j_id80').text,
+                        'razao_social': phantom.find_element_by_id('listaDevedoresForm:devedoresTable:0:j_id83').text}
 
         #
         phantom = webdriver.PhantomJS(service_args=['--ignore-ssl-errors=true', '--ssl-protocol=any'])
@@ -77,34 +81,42 @@ class CrawlerPgfnDevedores(Crawler):
         phantom.find_element_by_id('listaDevedoresForm:captcha').send_keys(captcha_text)
         if 'name' in dependencies:
             phantom.find_element_by_id('listaDevedoresForm:nomeInput').send_keys(dependencies['name'])
+            phantom.find_element_by_id('listaDevedoresForm:tipoConsultaRadio:2').click()
+        elif 'razao_social' in dependencies:
+            phantom.find_element_by_id('listaDevedoresForm:nomeInput').send_keys(dependencies['razao_social'])
+            phantom.find_element_by_id('listaDevedoresForm:tipoConsultaRadio:2').click()
         elif 'cpf' in dependencies:
             phantom.find_element_by_id('listaDevedoresForm:identificacaoInput').send_keys(dependencies['cpf'])
+            phantom.find_element_by_id('listaDevedoresForm:tipoConsultaRadio:0').click()
         else:
             phantom.find_element_by_id('listaDevedoresForm:identificacaoInput').send_keys(dependencies['cnpj'])
+            phantom.find_element_by_id('listaDevedoresForm:tipoConsultaRadio:0').click()
         phantom.find_element_by_id('listaDevedoresForm:consultarButton').click()
 
         count_row = len(phantom.find_elements_by_class_name('rich-table-row'))
         if count_row == 0:
-            # Ninguém foi retornado
+            # Nada foi retornado
             cls.update_crawler(primitive_current_id, primitive_current_name, -1)
             return
         elif count_row > 1:
-            # Mais que uma pessoa foi retornada. Isso pode acontecer, por exemplo, se quisermos exatamente a pessoa
+            # Mais que uma coisa foi retornada. Isso pode acontecer, por exemplo, se quisermos exatamente a pessoa
             # "José da Silva" e tiver vários que também tenham "José da Silva" no nome.
-            # Nesse caso, precisamos filtrar para encontrar apenas o "José da Silva"
+            # Nesse caso, precisamos filtrar para encontrar apenas o "José da Silva" que desejamos.
             # todo
-            raise ValueError('A busca me retornou mais que uma pessoa, e ainda não sei filtrar isso!')
+            raise ValueError('A busca me retornou mais que um único resultado, e ainda não sei filtrar isso!')
 
         phantom.find_element_by_css_selector('.rich-table-row a').click()
         try:
             WebDriverWait(phantom, 10).until(
-                EC.presence_of_element_located((By.ID, 'debitosTable:0:j_id39')) # todo: verificar se essa condição da certo para todos
+                EC.presence_of_element_located((By.ID, 'debitosTable:0:j_id39')) # todo: verificar se essa condição da certo sempre
             )
         finally:
             # todo: e se não carregar?
             pass
 
         cls.update_my_table(primitive_current_id, primitive_current_name, {})
+
+        cls.db.update_primitive_row({'id': primitive_current_id}, primitive_current_name, get_site_infos())
 
         for i in phantom.find_elements_by_css_selector('#debitosTable tr')[1:]:
             columns = i.find_elements_by_tag_name('td')
