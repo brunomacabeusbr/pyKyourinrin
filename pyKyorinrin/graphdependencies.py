@@ -19,9 +19,15 @@ class GraphDependencies:
         colors_available = list(matplotlib.colors.cnames.keys())
 
         for i in list_crawler:
-            color_choice = random.choice(colors_available)
-            colors_available.remove(color_choice)
+            while True:
+                color_choice = random.choice(colors_available)
+                colors_available.remove(color_choice)
+                r, g, b = matplotlib.colors.hex2color(matplotlib.colors.cnames[color_choice])
+                if r > 0.7 and g > 0.7 and b > 0.7:
+                    continue
+                break
             i.my_color = color_choice
+            print(i.name(), i.my_color, r, g, b)
 
         ###
         # criar node
@@ -89,9 +95,11 @@ class GraphDependencies:
         def element_present(element):
             return element in level_dependence_expanded()
 
-        list_dates_base = [i.crop() for i in list_crawler if i.have_dependencies() is False] # pegar todos as infos que podem ser alcançadas sem depedência
-        list_dates_base = [x for xs in list_dates_base for x in xs] # remover das tuplas
-        level_dependence.append(set(list_dates_base))
+        level_dependence.append(  # armazenar infos de nível 0, ou seja, as infos bases
+            set([i2
+                 for i in list_crawler if i.have_dependencies() is False
+                 for i2 in i.crop()])
+        )
 
         total_infos = list(set([i2 for i in list_crawler for i2 in i.crop()]))
 
@@ -100,25 +108,25 @@ class GraphDependencies:
             level_dependence.append([])
 
             for current_crawler in list_crawler:
-                for i2 in current_crawler.crop():
-                    # verificar se ele mesmo já está presente
-                    if element_present(i2):
+                for current_info in current_crawler.crop():
+                    # verificar se a info já está presente na listagem
+                    if element_present(current_info):
                         continue
 
                     # verificar depedencias dele
-                    my_dependencies = [i3 for i3 in current_crawler.dependencies()]
+                    my_dependencies = [i for i in current_crawler.dependencies()]
                     # verificar se há várias rotas de depedencia
                     multiple_dependence_routes = (type(my_dependencies[0]) == tuple)
                     if multiple_dependence_routes:
                         # se tiver multiplas rotas, vai verificar se alguma delas é alcançável com os dados já disponíveis
-                        for ix in my_dependencies:
-                            my_check_dep = [element_present(i3) for i3 in ix]
+                        for current_route in my_dependencies:
+                            my_check_dep = [element_present(i) for i in current_route]
                             if False not in my_check_dep:
                                 break
                     else:
-                        my_check_dep = [element_present(i3) for i3 in my_dependencies]
+                        my_check_dep = [element_present(i) for i in my_dependencies]
                     if False not in my_check_dep:
-                        level_dependence[level].append(i2)
+                        level_dependence[level].append(current_info)
 
             level += 1
 
@@ -140,12 +148,12 @@ class GraphDependencies:
 
         # todo: talvez haja um meio melhor de fazer a legenda
         # todo: caso dois edges tenham a mesma rota, um deles vai ficar escondido
-        import matplotlib.patches as mpatches
-        edges_patches = []
-        for i in Crawler.__subclasses__():
-            edges_patches.append(mpatches.Patch(color=i.my_color, label=i.name()))
-
-        plt.legend(handles=edges_patches)
+        #import matplotlib.patches as mpatches
+        #edges_patches = []
+        #for i in Crawler.__subclasses__():
+        #    edges_patches.append(mpatches.Patch(color=i.my_color, label=i.name()))
+#
+        #plt.legend(handles=edges_patches)
 
         plt.savefig("graph.png")
         plt.show()
