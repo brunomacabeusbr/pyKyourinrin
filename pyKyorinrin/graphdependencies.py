@@ -27,7 +27,6 @@ class GraphDependencies:
                     continue
                 break
             i.my_color = color_choice
-            print(i.name(), i.my_color, r, g, b)
 
         ###
         # criar node
