@@ -1,0 +1,54 @@
+<crawler>
+    <primitive_required>
+        <primitive harvest_param="">firm</primitive>
+    </primitive_required>
+
+    <database>
+        <table_main>
+            <column>
+                <name>date_start_simples_nacional</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>date_start_simei</name>
+                <type>TEXT</type>
+            </column>
+        </table_main>
+
+        <table_secondary>
+            <name>previous_periods_simples_nacional</name>
+            <column>
+                <name>date_initial</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>date_end</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>message</name>
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
+
+        <column_export>
+            <name>history_simples_nacional</name>
+        </column_export>
+    </database>
+
+    <dependencies>
+        <route>
+            <dependence>cnpj</dependence>
+        </route>
+    </dependencies>
+
+    <crop>
+        <info>razao_social</info>
+        <info>date_start_simples_nacional</info>
+        <info>date_start_simei</info>
+    </crop>
+
+    <harvest>
+        <url>http://www8.receita.fazenda.gov.br/SimplesNacional/Aplicacoes/ATBHE/ConsultaOptantes.app/ConsultarOpcao.aspx</url>
+    </harvest>
+</crawler>
