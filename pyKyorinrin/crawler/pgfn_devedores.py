@@ -46,7 +46,7 @@ class CrawlerPgfnDevedores(Crawler):
 
     @staticmethod
     def crop():
-        return 'name', 'cpf', 'cnpj', 'razao_social', 'pgfn_debt_total'
+        return ('name', 'primitive_peoples'), ('cpf', 'primitive_peoples'), ('cnpj', 'primitive_firm'), ('razao_social', 'primitive_firm'), 'pgfn_debt_total'
 
     @staticmethod
     def primitive_required():
