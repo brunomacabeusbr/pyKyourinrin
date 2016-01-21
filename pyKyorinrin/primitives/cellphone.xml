@@ -1,0 +1,10 @@
+<primitive>
+    <column>
+        <name>phone_number</name>
+        <type>TEXT</type>
+    </column>
+    <column>
+        <name>operator</name>
+        <type>TEXT</type>
+    </column>
+</primitive>
