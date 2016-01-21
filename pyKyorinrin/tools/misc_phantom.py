@@ -19,3 +19,15 @@ def element_image_download(phantom, element, padding_x=0, padding_y=0, padding_w
     region.save(file_name + '.jpg', 'JPEG')
 
     os.remove('temp.jpg')
+
+def alert_work(phantom):
+    # Gambiarra para poder ler as mensagens em de javascript "alert" nas páginas, pois isso não foi implementado no GhostDriver
+    # https://github.com/detro/ghostdriver/issues/20
+    # Irá adicionar ao phantom o método last_alert_message(), da qual retorna o texto do último alert
+    phantom.execute_script("""
+    window.alert.last_alert_message = undefined;
+    window.alert = function(message) {
+        window.alert.last_alert_message = message;
+    }
+    """)
+    phantom.last_alert_message = lambda: phantom.execute_script('return window.alert.last_alert_message')
