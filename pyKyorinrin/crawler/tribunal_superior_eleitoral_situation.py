@@ -67,5 +67,5 @@ class CrawlerTribunalSuperiorEleitoralSituation(Crawler):
         regexp = re.compile(r'<\/label>\s(.*)')
         l = re.findall(regexp, x)
 
-        cls.update_my_table(primitive_peoples, 'primitive_peoples', {'voter_registration': l[0], 'voter_situation_inscription': l[3].title()})
-        cls.update_crawler(primitive_peoples, 'primitive_peoples', 1)
+        cls.update_my_table({'voter_registration': l[0], 'voter_situation_inscription': l[3].title()})
+        cls.update_crawler(1)

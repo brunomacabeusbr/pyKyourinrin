@@ -31,7 +31,7 @@ class CrawlerSspds(Crawler):
     @classmethod
     def harvest(cls, primitive_peoples=None, dependencies=None):
         r2 = requests.post('http://www.sspds.ce.gov.br/AtestadoAntecedentes/AtestadoPesquisa.do?action=pesquisar',
-                      {'numRg': str(dependencies['identity']), 'nome': dependencies['name'], 'dataNasc': '{:02}'.format(dependencies['birthday_day']) + '/' + '{:02}'.format(dependencies['birthday_month']) + '/' + '{:02}'.format(dependencies['birthday_year']), 'mae': dependencies['name_monther']})
+                           {'numRg': str(dependencies['identity']), 'nome': dependencies['name'], 'dataNasc': '{:02}'.format(dependencies['birthday_day']) + '/' + '{:02}'.format(dependencies['birthday_month']) + '/' + '{:02}'.format(dependencies['birthday_year']), 'mae': dependencies['name_monther']})
 
         if r2.headers['content-type'] == 'application/pdf':
             with open('myfile.pdf', 'wb') as f:
@@ -49,9 +49,9 @@ class CrawlerSspds(Crawler):
             document, people_cpf, people_antecedentes = regexp_antecedentes.search(contents).groups()
 
             if document == 'CPF':
-                cls.db.update_primitive_row({'id': primitive_peoples}, 'primitive_peoples', {'cpf': people_cpf})
+                cls.db.update_primitive_row({'cpf': people_cpf})
 
-            cls.update_my_table(primitive_peoples, 'primitive_peoples', {'registrocriminal': people_antecedentes})
-            cls.update_crawler(primitive_peoples, 'primitive_peoples', 1)
+            cls.update_my_table({'registrocriminal': people_antecedentes})
+            cls.update_crawler(1)
         else:
-            cls.update_crawler(primitive_peoples, 'primitive_peoples', -1)
+            cls.update_crawler(-1)

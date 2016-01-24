@@ -188,15 +188,15 @@ class CrawlerPortalTransparencia(Crawler):
 
             people_name = people_name.title()
 
+            # todo: precisa lidar com o caso do cpf ser parcial para poder salva-lo e usa-lo
             if primitive_peoples is None:
-                cls.db.update_primitive_row({'name': people_name}, 'primitive_peoples') # todo: precisa lidar com o caso do cpf ser parcial para poder salva-lo e usa-lo
-                #cls.db.update_primitive_row({'name': people_name}, 'primitive_peoples', {'cpf': people_cpf})
-                tableid = cls.db.get_primitive_id_by_filter({'name': people_name}, 'primitive_peoples')
+                cls.db.update_primitive_row({}, primitive_filter={'name': people_name}, primitive_name='primitive_peoples') # chamar esse método passando {} é útil para criar a primitive row caso não exista
+                primitive_id = cls.db.get_primitive_id_by_filter({'name': people_name}, 'primitive_peoples')
             else:
-                cls.db.update_primitive_row({'id': primitive_peoples}, 'primitive_peoples', {'name': people_name})
-                #cls.db.update_primitive_row({'id': primitive_peoples}, 'primitive_peoples', {'name': people_name, 'cpf': people_cpf})
-                tableid = cls.db.get_primitive_id_by_filter({'id': primitive_peoples}, 'primitive_peoples')
-            cls.update_my_table(tableid, 'primitive_peoples', {'federal_employee_type': people_federal_employee_type})
+                cls.db.update_primitive_row({'name': people_name})
+                primitive_id = primitive_peoples
+
+            cls.update_my_table({'federal_employee_type': people_federal_employee_type}, primitive_id=primitive_id, primitive_name='primitive_peoples')
 
             # Infos do emprego
             jobs_infos = phantom.execute_script(
@@ -289,8 +289,8 @@ class CrawlerPortalTransparencia(Crawler):
             if jobs_infos is not None:
                 for i in jobs_infos:
                     i = defaultdict(lambda: None, i)
-                    cls.update_my_table(tableid, 'primitive_peoples',
-                                        {'type_contract': i['type_contract'], 'job': i['job'], 'workplace': i['workplace'], 'working_hours': i['working_hours']}, table='job')
+                    cls.update_my_table({'type_contract': i['type_contract'], 'job': i['job'], 'workplace': i['workplace'], 'working_hours': i['working_hours']},
+                                        table='job', primitive_id=primitive_id, primitive_name='primitive_peoples')
 
             # Infos salariais
             phantom.get('http://www.portaltransparencia.gov.br/servidores/Servidor-DetalhaRemuneracao.asp?Op=1&bInformacaoFinanceira=True&IdServidor=' + str(current_siteid))
@@ -308,7 +308,8 @@ class CrawlerPortalTransparencia(Crawler):
                         phantom.find_element_by_css_selector('.remuneracaohead1 th').get_attribute('innerHTML')
                     ).groups()
 
-                cls.update_my_table(tableid, 'primitive_peoples', {'month': month, 'year': year}, table='remuneration_date')
+                cls.update_my_table({'month': month, 'year': year},
+                                    table='remuneration_date', primitive_id=primitive_id, primitive_name='primitive_peoples')
                 reference_remuneration_date = cls.db.lastrowid()
 
                 remunerations_infos = phantom.execute_script(
@@ -325,7 +326,8 @@ class CrawlerPortalTransparencia(Crawler):
                 )
 
                 for i2 in remunerations_infos:
-                    cls.update_my_table(tableid, 'primitive_peoples', {'reference_remuneration_date': reference_remuneration_date, 'type': i2['type'], 'value': i2['value']}, table='remuneration_info')
+                    cls.update_my_table({'reference_remuneration_date': reference_remuneration_date, 'type': i2['type'], 'value': i2['value']},
+                                        table='remuneration_info', primitive_id=primitive_id, primitive_name='primitive_peoples')
 
             # Finalizar
-            cls.update_crawler(tableid, 'primitive_peoples', 1)
+            cls.update_crawler(1, primitive_id=primitive_id, primitive_name='primitive_peoples')

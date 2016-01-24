@@ -135,21 +135,36 @@ class ManagerDatabase:
         self.execute('INSERT INTO ' + primitive_name + ' (' + ','.join(primitive_infos.keys()) + ') VALUES (' + ','.join(primitive_infos.values()) + ')')
         self.execute('INSERT INTO ' + primitive_name + '_crawler (id) VALUES (?)', (self.lastrowid(),))
 
-    def update_primitive_row(self, primitive_filter, primitive_name, column_and_value=None):
-        # Buscar qual linha da primitive deve ser atualizada, ou, se ela não existir, criará
-        count_people = self.count_primitive_rows_with_this_filters(primitive_filter, primitive_name) # todo: para otimizar, se o filtro for o id, pode pular isso aqui
-        if count_people == 0:
-            self.new_primitive_row(primitive_filter, primitive_name)
-        elif count_people > 1:
-            raise ValueError('Há mais que uma linha com os critérios fornecidos! Não sei qual eu devo atualizar')
+    def update_primitive_row(self, column_and_value, primitive_filter=None, primitive_name=None):
+        if hasattr(Crawler, 'temp_current_primitive_name'):
+            if primitive_filter is not None or primitive_name is not None:
+                raise ValueError('Não forneça o parâmetro "primitive_filter" nem "primitive_name",'
+                                 'pois esse crawler recebeu como parâmetro um id de primitive')
 
-        # Colocar as informações na linha
-        if column_and_value is not None:
-            column_and_value = {i: j for i, j in column_and_value.items() if j is not None}
+            primitive_name = Crawler.temp_current_primitive_name
+            where_statement = ' WHERE id=' + str(Crawler.temp_current_primitive_id)
+        else:
+            if primitive_filter is None or primitive_name is None:
+                raise ValueError('É necessário fornecer o parâmetro "primitive_filter" e "primitive_name" para eu saber qual primitive row eu irei atualizar,'
+                                 'uma vez em que esse crawler não recebeu como parâmetro um id de primitive')
 
+            # Verificar se a primitive row já existe e, caso não exista, cria
+            count_people = self.count_primitive_rows_with_this_filters(primitive_filter, primitive_name)
+            if count_people == 0:
+                self.new_primitive_row(primitive_filter, primitive_name)
+            elif count_people > 1:
+                raise ValueError('Há mais que uma primitive row com os critérios fornecidos! Não sei qual eu devo atualizar')
+
+            # Definir qual linha da primitive deve ser atualizada
+            where_statement = ' WHERE %s ' % ' AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in primitive_filter.items())
+
+        # Salvar no banco
+        column_and_value = {i: j for i, j in column_and_value.items() if j is not None}
+
+        if len(column_and_value) > 0:
             self.execute("UPDATE " + primitive_name +
                          " SET " + ','.join('{}="{}"'.format(key, val) for key, val in column_and_value.items()) +
-                         ' WHERE %s ' % ' AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in primitive_filter.items()))
+                         where_statement)
 
     def crawler_list_status(self, primitive_id, primitive_name):
         return self.select_column_and_value(

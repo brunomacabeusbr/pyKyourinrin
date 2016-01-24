@@ -102,9 +102,8 @@ class CrawlerTribunalSuperiorEleitoralDomicilioEleitoral(Crawler):
 
         # todo: por para salvar o nome no peoples
         # todo: tá salvando o estado com espaço no começo
-        cls.update_my_table(primitive_peoples, 'primitive_peoples',
-                            {'voter_registration': l[2].text, 'domicilio_eleitoral_zona': l[7].text,
+        cls.update_my_table({'voter_registration': l[2].text, 'domicilio_eleitoral_zona': l[7].text,
                              'domicilio_eleitoral_secao': l[9].text, 'domicilio_eleitoral_local': l[11].text,
                              'domicilio_eleitoral_edereco': l[13].text, 'domicilio_eleitoral_city': s[0],
                              'domicilio_eleitoral_state': s[1]})
-        cls.update_crawler(primitive_peoples, 'primitive_peoples', 1)
+        cls.update_crawler(1)

@@ -54,20 +54,6 @@ class CrawlerPgfnDevedores(Crawler):
 
     @classmethod
     def harvest(cls, primitive_peoples=None, primitive_firm=None, dependencies=None):
-        if primitive_peoples is not None:
-            primitive_current_id = primitive_peoples
-            primitive_current_name = 'primitive_peoples'
-            def get_site_infos():
-                return {'cpf': phantom.find_element_by_id('listaDevedoresForm:devedoresTable:0:j_id80').text,
-                        'name': phantom.find_element_by_id('listaDevedoresForm:devedoresTable:0:j_id83').text}
-        else:
-            primitive_current_id = primitive_firm
-            primitive_current_name = 'primitive_firm'
-            def get_site_infos():
-                return {'cnpj': phantom.find_element_by_id('listaDevedoresForm:devedoresTable:0:j_id80').text,
-                        'razao_social': phantom.find_element_by_id('listaDevedoresForm:devedoresTable:0:j_id83').text}
-
-        #
         phantom = webdriver.PhantomJS(service_args=['--ignore-ssl-errors=true', '--ssl-protocol=any'])
         phantom.get('https://www2.pgfn.fazenda.gov.br/ecac/contribuinte/devedores/listaDevedores.jsf')
         captchar_id = phantom.find_element_by_id('txtToken_captcha_serpro_gov_br').get_attribute('value')
@@ -96,7 +82,7 @@ class CrawlerPgfnDevedores(Crawler):
         count_row = len(phantom.find_elements_by_class_name('rich-table-row'))
         if count_row == 0:
             # Nada foi retornado
-            cls.update_crawler(primitive_current_id, primitive_current_name, -1)
+            cls.update_crawler(-1)
             return
         elif count_row > 1:
             # Mais que uma coisa foi retornada. Isso pode acontecer, por exemplo, se quisermos exatamente a pessoa
@@ -114,12 +100,21 @@ class CrawlerPgfnDevedores(Crawler):
             # todo: e se não carregar?
             pass
 
-        cls.update_my_table(primitive_current_id, primitive_current_name, {})
+        cls.update_my_table({})
 
-        cls.db.update_primitive_row({'id': primitive_current_id}, primitive_current_name, get_site_infos())
+        if primitive_peoples is not None:
+            cls.db.update_primitive_row(
+                {'cpf': phantom.find_element_by_id('listaDevedoresForm:devedoresTable:0:j_id80').text,
+                'name': phantom.find_element_by_id('listaDevedoresForm:devedoresTable:0:j_id83').text}
+            )
+        else:
+            cls.db.update_primitive_row(
+                {'cnpj': phantom.find_element_by_id('listaDevedoresForm:devedoresTable:0:j_id80').text,
+                'razao_social': phantom.find_element_by_id('listaDevedoresForm:devedoresTable:0:j_id83').text}
+            )
 
         for i in phantom.find_elements_by_css_selector('#debitosTable tr')[1:]:
             columns = i.find_elements_by_tag_name('td')
-            cls.update_my_table(primitive_current_id, primitive_current_name, {'inscription_number': columns[0].text, 'value': columns[1].text.replace('.', '').replace(',','.'), 'type': columns[2].text}, table='debt')
+            cls.update_my_table({'inscription_number': columns[0].text, 'value': columns[1].text.replace('.', '').replace(',', '.'), 'type': columns[2].text}, table='debt')
 
-        cls.update_crawler(primitive_current_id, primitive_current_name, 1)
+        cls.update_crawler(1)

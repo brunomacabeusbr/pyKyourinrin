@@ -173,19 +173,19 @@ class CrawlerQSelecao(Crawler):
             peopleBirthdayDay, peopleBirthdayMonth, peopleBirthdayYear = regexBirthday.search(r.text).groups()
             peopleIdentity = re.sub('[^\d]+', '', regexIdentity.search(r.text).group(1))
 
-            cls.db.update_primitive_row({'name': peopleName}, 'primitive_peoples',
-                                        {'birthday_day': peopleBirthdayDay, 'birthday_month': peopleBirthdayMonth, 'birthday_year': peopleBirthdayYear})
+            cls.db.update_primitive_row({'birthday_day': peopleBirthdayDay, 'birthday_month': peopleBirthdayMonth, 'birthday_year': peopleBirthdayYear},
+                                        primitive_filter={'name': peopleName}, primitive_name='primitive_peoples')
             if peopleIdentity.isdecimal():
                 # há casos a serem lidados como em http://qselecao.ifce.edu.br/cartao_identificacao_dinamico.aspx?idcandidatoconcurso=328680&etapa=1
-                cls.db.update_primitive_row({'name': peopleName}, 'primitive_peoples', {'identity': peopleIdentity})
+                cls.db.update_primitive_row({'identity': peopleIdentity}, primitive_filter={'name': peopleName}, primitive_name='primitive_peoples',)
 
-            tableid = cls.db.get_primitive_id_by_filter({'name': peopleName}, 'primitive_peoples')
+            primitive_id = cls.db.get_primitive_id_by_filter({'name': peopleName}, 'primitive_peoples')
             try:
-                cls.update_my_table(tableid, 'primitive_peoples', {})
+                cls.update_my_table({}, primitive_id=primitive_id, primitive_name='primitive_peoples')
             except:
                 pass
-            cls.update_my_table(tableid, 'primitive_peoples', {'name_public_tender': publicTender, 'course': course}, table='public_tender')
-            cls.update_crawler(tableid, 'primitive_peoples', 1)
+            cls.update_my_table({'name_public_tender': publicTender, 'course': course}, table='public_tender', primitive_id=primitive_id, primitive_name='primitive_peoples')
+            cls.update_crawler(1, primitive_id=primitive_id, primitive_name='primitive_peoples')
 
         if specifc_concurso is None:
             target = crawler_all_qselecao_concursos()

@@ -45,7 +45,7 @@ class CrawlerSimplesNacional(Crawler):
 
     @staticmethod
     def crop():
-        return 'razao_social', 'date_start_simples_nacional', 'date_start_simei'
+        return 'razao_social', 'date_start_simples_nacional', 'date_start_simei', 'history_simples_nacional'
 
     @staticmethod
     def primitive_required():
@@ -72,7 +72,7 @@ class CrawlerSimplesNacional(Crawler):
 
         if len(phantom.find_elements_by_id('ctl00_ContentPlaceHolderConteudo_lblErroCaptcha')) > 0:
             # O CNPJ fornecido é inválido
-            cls.update_crawler(primitive_firm, 'primitive_firm', -1)
+            cls.update_crawler(-1)
             return
 
         ###
@@ -90,17 +90,14 @@ class CrawlerSimplesNacional(Crawler):
         else:
             save_simei = text_simei[-10:]
 
-        cls.db.update_primitive_row({'id': primitive_firm}, 'primitive_firm',
-                                    {'razao_social': phantom.find_element_by_id('ctl00_ContentPlaceHolderConteudo_lblNomeEmpresa').text})
-        cls.update_my_table(primitive_firm, 'primitive_firm',
-                            {'date_start_simples_nacional': save_simples_nacional, 'date_start_simei': save_simei})
+        cls.db.update_primitive_row({'razao_social': phantom.find_element_by_id('ctl00_ContentPlaceHolderConteudo_lblNomeEmpresa').text})
+        cls.update_my_table({'date_start_simples_nacional': save_simples_nacional, 'date_start_simei': save_simei})
 
         table_history_simples_nacional = phantom.find_elements_by_id('ctl00_ContentPlaceHolderConteudo_GridViewOpcoesAnteriores')
         if len(table_history_simples_nacional) > 0:
             for i in table_history_simples_nacional[0].find_elements_by_tag_name('tr')[1:]:
                 date_initial, date_end, message = [i2.text for i2 in i.find_elements_by_tag_name('td')]
-                cls.update_my_table(primitive_firm, 'primitive_firm',
-                                    {'date_initial': date_initial, 'date_end': date_end, 'message': message},
+                cls.update_my_table({'date_initial': date_initial, 'date_end': date_end, 'message': message},
                                     table='previous_periods_simples_nacional')
 
         if phantom.find_element_by_id('ctl00_ContentPlaceHolderConteudo_lblSIMEIPeriodosAnteriores').text[-11:] != 'Não Existem':
@@ -108,4 +105,4 @@ class CrawlerSimplesNacional(Crawler):
             # encontrado uma empresa de exemplo
             print('Nessa empresa de id {} há informação coletável em "Opções pelo SIMEI em Períodos Anteriores" ainda não implementada no crawler!'.format(primitive_firm))
 
-        cls.update_crawler(primitive_firm, 'primitive_firm', 1)
+        cls.update_crawler(1)

@@ -21,11 +21,32 @@ class Crawler:
         return ()
 
     @classmethod
-    def update_my_table(cls, primitive_id, primitive_name, column_and_value, table=None):
+    def update_my_table(cls, column_and_value, table=None, primitive_id=None, primitive_name=None):
+        # Verificação a respeito das variáveis temporárias que armazenam a primitive_id e primitive_name
+        if hasattr(cls, 'temp_current_primitive_name'):
+            # Se elas estiverem presente, então, usará as variáveis temporárias;
+            # por conta de crawler como o portal_transparencia, pode ser útil passa-la de forma redudante para esse método,
+            # e precisamos apenas verificar se o valor redudante está correto, para evitar erros do crawler querer atualizar
+            # uma primitiva row não passada ao crawler
+            if (primitive_id is not None or primitive_name is not None) and\
+                    (primitive_id != cls.temp_current_primitive_id or primitive_name != cls.temp_current_primitive_name):
+                raise ValueError('Os valores passados estão diferentes do esperado')
+
+            primitive_id = cls.temp_current_primitive_id
+            primitive_name = cls.temp_current_primitive_name
+        else:
+            # Se as variáveis temporárias não estiverem presente, então o crawler não recebeu como parâmetro uma primitive row
+            # e agora está precisando editar alguma primitive row
+            # Então esse método precisa receber os parâmetros que identificam uma primitive row
+            if primitive_id is None or primitive_name is None:
+                raise ValueError('É necessário fornecer o parâmetro "primitive_id" e "primitive_name",'
+                                 'uma vez em que esse crawler não recebeu como parâmetro um id de primitive')
+
+        # Salvar no banco
         if table is None:
             table = cls.name()
             if Crawler.db.execute("SELECT COUNT(*) FROM " + table + " WHERE " + primitive_name + "_id=?", (primitive_id,)).fetchone()[0] > 0:
-                raise ValueError("Essa pessoa já está presente na tabela principal do crawler")
+                raise ValueError("Já há registro disso na tabela principal do crawler")
         else:
             table = cls.name() + '_' + table
 
@@ -41,13 +62,28 @@ class Crawler:
                 (primitive_id,)
             )
 
-    # id deve ser, preferencialmente, o id da coluna da pessoa, ou então o nome dela
     @classmethod
-    def update_crawler(cls, primitive_id, primitive_name, result):
+    def update_crawler(cls, result, primitive_id=None, primitive_name=None):
+        # Verificação a respeito das variáveis temporárias que armazenam a primitive_id e primitive_name
+        # todo: código repetido com o método "update_my_table" (dica: lá tá comentanda essa bagunça daqui)
+        if hasattr(cls, 'temp_current_primitive_name'):
+            if (primitive_id is not None or primitive_name is not None) and\
+                    (primitive_id != cls.temp_current_primitive_id or primitive_name != cls.temp_current_primitive_name):
+                raise ValueError('Os valores passados estão diferentes do esperado')
+
+            primitive_id = cls.temp_current_primitive_id
+            primitive_name = cls.temp_current_primitive_name
+        else:
+            if primitive_id is None or primitive_name is None:
+                raise ValueError('É necessário fornecer o parâmetro "primitive_id" e "primitive_name",'
+                                 'uma vez em que esse crawler não recebeu como parâmetro um id de primitive')
+
+        # Salvar no banco
         # result: 1 -> success ; -1 -> fail # todo: talvez seja melhor mudar para o parâmetro ser True ou False
-        if not isinstance(primitive_id, int):
-            raise ValueError('Aqui não pode ser chamado!')
-        Crawler.db.execute("UPDATE %s_crawler SET %s = ? WHERE id=?" % (primitive_name, cls.name()), (result, primitive_id,))
+        Crawler.db.execute(
+            "UPDATE %s_crawler SET %s = ? WHERE id=?" % (primitive_name, cls.name()),
+            (result, primitive_id,)
+        )
 
     @staticmethod
     @abstractmethod
@@ -189,8 +225,16 @@ class GetDependencies:
                 else:
                     return False
 
+        # "Passar" de forma implícita variáveis temporárias ao Crawler, úteis na hora de salvar as infos no banco de dados
+        Crawler.temp_current_primitive_name = primitive_name
+        Crawler.temp_current_primitive_id = primitive_id
+
+        # Colher
         self.harvest(*args, dependencies=dict_dependencies, **kwargs)
 
+        # Após a colheita, para evitar problemas, apagará as variáveis temporárias
+        del Crawler.temp_current_primitive_name
+        del Crawler.temp_current_primitive_id
 
 def harvest_and_commit(harvest_fun, *args, **kwargs):
     # Implicitamente, sempre será commitada as alterações ao banco de dados ao finalizar a colheita
