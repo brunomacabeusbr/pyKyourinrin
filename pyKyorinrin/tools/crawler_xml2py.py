@@ -26,7 +26,9 @@ column_export = []
 if column_export_root:
     column_export = [i.text for i in column_export_root.findall('name')]
 dependencies = [[i2.text for i2 in i.findall('dependence')] for i in xml_root.find('dependencies').findall('route')]
-crop = [i.text for i in xml_root.find('crop').findall('info')] # todo: talvez adicionar automaticamente ao crop as colunas exportadas?
+crop =\
+    [i.text for i in xml_root.find('crop').findall('info') if 'primitive' not in i.attrib] +\
+    [(i.text, i.attrib['primitive']) for i in xml_root.find('crop').findall('info') if 'primitive' in i.attrib]
 harvest = {i.tag: i.text for i in xml_root.find('harvest') if i.tag == 'url'} # todo: colocar para usar a tag url
 harvest['param_additional'] = [i.text for i in xml_root.find('harvest').findall('param_additional')]
 
@@ -127,6 +129,12 @@ def inter_to_tuple(inter):
 def inter_to_tuple_multi_line(inter, indentation_ideep):
     return (',\n'.join('    ' * indentation_ideep + '{}'.format(i) for i in inter), '    ' * indentation_ideep + inter[0] + ',')[len(inter) == 1]
 
+def write_crop():
+    if len(crop) == 1:
+        return "'{}',".format(crop[0])
+    else:
+        return ', '.join(["'{}'".format(i) for i in crop if type(i) is str] + ["('{}', 'primitive_{}')".format(i[0], i[1]) for i in crop if type(i) is tuple])
+
 def write_dependencies():
     if len(dependencies[0]) == 0:
         return "'',"
@@ -176,7 +184,7 @@ class Crawler""" + crawler_name_camel_case + """(Crawler):
 
     @staticmethod
     def crop():
-        return """ + inter_to_tuple(crop) + """
+        return """ + write_crop() + """
 
     @staticmethod
     def primitive_required():

@@ -1,0 +1,59 @@
+<crawler>
+    <primitive_required>
+        <primitive harvest_param="">peoples</primitive>
+        <primitive harvest_param="">firm</primitive>
+    </primitive_required>
+
+    <database>
+        <table_main>
+
+        </table_main>
+
+        <table_secondary>
+            <name>debt</name>
+            <column>
+                <name>inscription_number</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>value</name>
+                <type>FLOAT</type>
+            </column>
+            <column>
+                <name>type</name>
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
+
+        <column_export>
+            <name>pgfn_debt_total</name>
+        </column_export>
+    </database>
+
+    <dependencies>
+        <route>
+            <dependence>name</dependence>
+        </route>
+        <route>
+            <dependence>cpf</dependence>
+        </route>
+        <route>
+            <dependence>cnpj</dependence>
+        </route>
+        <route>
+            <dependence>razao_social</dependence>
+        </route>
+    </dependencies>
+
+    <crop>
+        <info primitive="peoples">name</info>
+        <info primitive="peoples">cpf</info>
+        <info primitive="firm">cnpj</info>
+        <info primitive="firm">razao_social</info>
+        <info>pgfn_debt_total</info>
+    </crop>
+
+    <harvest>
+        <url>https://www2.pgfn.fazenda.gov.br/ecac/contribuinte/devedores/listaDevedores.jsf</url>
+    </harvest>
+</crawler>
