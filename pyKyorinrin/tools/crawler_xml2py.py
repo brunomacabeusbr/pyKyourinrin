@@ -2,6 +2,7 @@ import sys
 import os
 from collections import OrderedDict
 
+# Load xml
 my_path = os.path.dirname(os.path.realpath(__file__))
 xml_name = sys.argv[1]
 xml_file = my_path + '/../crawler_xml/' + xml_name + '.xml'
@@ -21,12 +22,47 @@ tables_secondary = OrderedDict(
 )
 reference_list = {i.find('name').text: i.find('reference').text for i in xml_root.find('database').findall('table_secondary') if i.find('reference') is not None}
 column_export_root = xml_root.find('database').find('column_export')
+column_export = []
 if column_export_root:
     column_export = [i.text for i in column_export_root.findall('name')]
 dependencies = [[i2.text for i2 in i.findall('dependence')] for i in xml_root.find('dependencies').findall('route')]
 crop = [i.text for i in xml_root.find('crop').findall('info')] # todo: talvez adicionar automaticamente ao crop as colunas exportadas?
 harvest = {i.tag: i.text for i in xml_root.find('harvest') if i.tag == 'url'} # todo: colocar para usar a tag url
 harvest['param_additional'] = [i.text for i in xml_root.find('harvest').findall('param_additional')]
+
+# Verificar nomes
+# explicação do black_list: no primeiro elemento da tupla, fica o nome que não pode ser usado, no segundo a sua localização
+#   os parâmetros de localização são: 'first' se o nome não pode ficar no começo ou 'equal' se o nome não pdoe ser exatamente aquele
+black_list_name_crawler = [('main', 'first'), ('primitive', 'first')]
+black_list_name_column = [('primitive', 'first'), ('reference', 'first'), ('id', 'equal')]
+white_list_type_column = ['TEXT', 'INTEGER', 'FLOAT']
+
+def check_black_list(name, black_list):
+    for i in black_list:
+        if i[1] == 'first':
+            if name[:len(i[0])] == i[0]:
+                raise ValueError('O nome "{}" não pode ser usado, pois começa com "{}", que é usado pelo pyKyorinrin'.format(name, i[0]))
+        elif i[1] == 'equal':
+            if name == i[0]:
+                raise ValueError('O nome "{}" não pode ser usado, pois é uma palavra reservada'.format(name))
+
+def check_white_list(name, white_list):
+    if name not in white_list:
+        raise ValueError('O nome "{}" não pode ser usado, pois os únicos válidos nesse lugar são {}'.format(name, ', '.join(white_list)))
+
+check_black_list(xml_name, black_list_name_crawler)
+
+for i in table_main_columns:
+    check_black_list(i[0], black_list_name_column)
+    check_white_list(i[1], white_list_type_column)
+
+for i in tables_secondary.values():
+    for i2 in i:
+        check_black_list(i2[0], black_list_name_column)
+        check_white_list(i2[1], white_list_type_column)
+
+for i in column_export:
+    check_black_list(i, black_list_name_column)
 
 # Write py
 crawler_name_camel_case = ''.join(i.title() for i in xml_name.split('_'))
