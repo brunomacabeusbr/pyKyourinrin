@@ -52,8 +52,8 @@ class CrawlerAbrTelecom(Crawler):
         ###
         # Colher informações
         if get_error() == 'Não existem dados retornados para a consulta!':
-            cls.update_crawler(-1)
+            cls.update_crawler_status(False)
             return
 
         cls.db.update_primitive_row({'operator': phantom.find_element_by_class_name('gridselecionado').find_elements_by_tag_name('td')[2].text})
-        cls.update_crawler(1)
+        cls.update_crawler_status(True)

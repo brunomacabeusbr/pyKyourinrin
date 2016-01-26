@@ -185,7 +185,7 @@ class CrawlerQSelecao(Crawler):
             except:
                 pass
             cls.update_my_table({'name_public_tender': publicTender, 'course': course}, table='public_tender', primitive_id=primitive_id, primitive_name='primitive_peoples')
-            cls.update_crawler(1, primitive_id=primitive_id, primitive_name='primitive_peoples')
+            cls.update_crawler_status(True, primitive_id=primitive_id, primitive_name='primitive_peoples')
 
         if specifc_concurso is None:
             target = crawler_all_qselecao_concursos()

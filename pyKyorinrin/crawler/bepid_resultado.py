@@ -56,4 +56,4 @@ class CrawlerBepidResultado(Crawler):
                                  'bepid_ranked_first': (0, 1)[i[6] == 'Classificado'],
                                  'bepid_ranked_second': (0, 1)[i[1] in ranked_second_stage]},
                                 primitive_id=primitive_id, primitive_name='primitive_peoples')
-            cls.update_crawler(1, primitive_id=primitive_id, primitive_name='primitive_peoples')
+            cls.update_crawler_status(True, primitive_id=primitive_id, primitive_name='primitive_peoples')

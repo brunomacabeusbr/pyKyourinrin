@@ -106,4 +106,4 @@ class CrawlerTribunalSuperiorEleitoralDomicilioEleitoral(Crawler):
                              'domicilio_eleitoral_secao': l[9].text, 'domicilio_eleitoral_local': l[11].text,
                              'domicilio_eleitoral_edereco': l[13].text, 'domicilio_eleitoral_city': s[0],
                              'domicilio_eleitoral_state': s[1]})
-        cls.update_crawler(1)
+        cls.update_crawler_status(True)

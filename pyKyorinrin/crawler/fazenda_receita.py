@@ -41,11 +41,11 @@ class CrawlerFazendaReceita(Crawler):
 
         if json_return['mensagemRetorno'] != 'OK':
             # se não dê certo, então o cpf não casa com a data de nascimento; um deles, ou ambos, estão incorretos
-            cls.update_crawler(-1)
+            cls.update_crawler_status(False)
             return
 
         cls.db.update_primitive_row({'name': json_return['nome'].title()})
         cls.update_my_table({'death_year': json_return['anoObito']})
-        cls.update_crawler('primitive_peoples', 1)
+        cls.update_crawler_status(True)
 
         # todo: falta ainda checar a mensagem de óbito, para salvar no banco

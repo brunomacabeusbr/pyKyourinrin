@@ -68,4 +68,4 @@ class CrawlerTribunalSuperiorEleitoralSituation(Crawler):
         l = re.findall(regexp, x)
 
         cls.update_my_table({'voter_registration': l[0], 'voter_situation_inscription': l[3].title()})
-        cls.update_crawler(1)
+        cls.update_crawler_status(True)

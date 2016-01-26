@@ -175,7 +175,7 @@ class CrawlerPortalTransparencia(Crawler):
 
             # Se tiver retornado nada, é porque essa pessoa especificada não está presente no Portal da Transparencia
             if len(list_peoples) == 0:
-                cls.update_crawler(primitive_peoples, 'primitive_peoples', -1)
+                cls.update_crawler_status(False)
                 return
 
         list_peoples = [i['siteid'] for i in list_peoples]
@@ -330,4 +330,4 @@ class CrawlerPortalTransparencia(Crawler):
                                         table='remuneration_info', primitive_id=primitive_id, primitive_name='primitive_peoples')
 
             # Finalizar
-            cls.update_crawler(1, primitive_id=primitive_id, primitive_name='primitive_peoples')
+            cls.update_crawler_status(True, primitive_id=primitive_id, primitive_name='primitive_peoples')

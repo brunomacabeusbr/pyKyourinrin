@@ -63,7 +63,7 @@ class Crawler:
             )
 
     @classmethod
-    def update_crawler(cls, result, primitive_id=None, primitive_name=None):
+    def update_crawler_status(cls, status, primitive_id=None, primitive_name=None):
         # Verificação a respeito das variáveis temporárias que armazenam a primitive_id e primitive_name
         # todo: código repetido com o método "update_my_table" (dica: lá tá comentanda essa bagunça daqui)
         if hasattr(cls, 'temp_current_primitive_name'):
@@ -79,10 +79,10 @@ class Crawler:
                                  'uma vez em que esse crawler não recebeu como parâmetro um id de primitive')
 
         # Salvar no banco
-        # result: 1 -> success ; -1 -> fail # todo: talvez seja melhor mudar para o parâmetro ser True ou False
+        status = (-1, 1)[status]
         Crawler.db.execute(
             "UPDATE %s_crawler SET %s = ? WHERE id=?" % (primitive_name, cls.name()),
-            (result, primitive_id,)
+            (status, primitive_id,)
         )
 
     @staticmethod

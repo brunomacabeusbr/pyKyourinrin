@@ -82,7 +82,7 @@ class CrawlerPgfnDevedores(Crawler):
         count_row = len(phantom.find_elements_by_class_name('rich-table-row'))
         if count_row == 0:
             # Nada foi retornado
-            cls.update_crawler(-1)
+            cls.update_crawler_status(False)
             return
         elif count_row > 1:
             # Mais que uma coisa foi retornada. Isso pode acontecer, por exemplo, se quisermos exatamente a pessoa
@@ -117,4 +117,4 @@ class CrawlerPgfnDevedores(Crawler):
             columns = i.find_elements_by_tag_name('td')
             cls.update_my_table({'inscription_number': columns[0].text, 'value': columns[1].text.replace('.', '').replace(',', '.'), 'type': columns[2].text}, table='debt')
 
-        cls.update_crawler(1)
+        cls.update_crawler_status(True)

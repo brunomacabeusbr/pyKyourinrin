@@ -52,6 +52,6 @@ class CrawlerSspds(Crawler):
                 cls.db.update_primitive_row({'cpf': people_cpf})
 
             cls.update_my_table({'registrocriminal': people_antecedentes})
-            cls.update_crawler(1)
+            cls.update_crawler_status(True)
         else:
-            cls.update_crawler(-1)
+            cls.update_crawler_status(False)

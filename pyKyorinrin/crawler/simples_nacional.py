@@ -72,7 +72,7 @@ class CrawlerSimplesNacional(Crawler):
 
         if len(phantom.find_elements_by_id('ctl00_ContentPlaceHolderConteudo_lblErroCaptcha')) > 0:
             # O CNPJ fornecido é inválido
-            cls.update_crawler(-1)
+            cls.update_crawler_status(False)
             return
 
         ###
@@ -105,4 +105,4 @@ class CrawlerSimplesNacional(Crawler):
             # encontrado uma empresa de exemplo
             print('Nessa empresa de id {} há informação coletável em "Opções pelo SIMEI em Períodos Anteriores" ainda não implementada no crawler!'.format(primitive_firm))
 
-        cls.update_crawler(1)
+        cls.update_crawler_status(True)

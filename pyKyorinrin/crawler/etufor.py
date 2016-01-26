@@ -82,15 +82,15 @@ class CrawlerEtufor(Crawler):
 
         if count_total_box_table() == 7:
             # pessoa nao tem carteira da etufor
-            cls.update_crawler(-1)
+            cls.update_crawler_status(False)
             return
-
-        cls.update_crawler(1)
 
         regexp_date = re.compile(r'(\d+)\/(\d+)\/(\d+)')
         birthday_day, birthday_month, birthday_year = regexp_date.search(get_text_in_table(10)).groups()
         cls.db.update_primitive_row({'name_social': get_text_in_table(9), 'birthday_day': birthday_day, 'birthday_month': birthday_month, 'birthday_year': birthday_year})
         cls.update_my_table({'cia': get_text_in_table(6)})
+
+        cls.update_crawler_status(True)
 
         try:
             phantom.find_element_by_tag_name('a').click()
@@ -117,5 +117,3 @@ class CrawlerEtufor(Crawler):
 
             cls.update_my_table({'timestamp': timestamp_iso, 'school': school, 'type': school_type, 'course': course, 'turn': turn}, table='records_school')
             pos += 10
-
-        cls.update_crawler(1)
