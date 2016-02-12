@@ -171,7 +171,7 @@ class CrawlerPortalTransparencia(Crawler):
             # se pesquisar por "Francisco José da Silva", pode vim "Francisco José da Costa e Silva", mas não queremos este último
             if 'name' in dependencies:
                 list_peoples = [{'siteid': i['siteid'], 'name': i['name']} for i in list_peoples
-                                if i['name'] == dependencies['name']]
+                                if i['name'].upper() == dependencies['name'].upper()]
 
             # Se tiver retornado nada, é porque essa pessoa especificada não está presente no Portal da Transparencia
             if len(list_peoples) == 0:
