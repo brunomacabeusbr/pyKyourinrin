@@ -36,8 +36,15 @@ class CrawlerEtufor(Crawler):
             else:
                 return None
 
+        def record_registered_school(read):
+            if len(read['records_school']) > 0:
+                return read['records_school']
+            else:
+                return None
+
         return (
             {'column_name': 'last_school_name', 'how': last_school_name},
+            {'column_name': 'record_registered_school', 'how': record_registered_school},
         )
 
     @staticmethod
