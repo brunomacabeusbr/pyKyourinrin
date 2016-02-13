@@ -5,7 +5,7 @@ from abc import ABCMeta, abstractmethod
 
 ###
 # Classes fakes para serem usadas na checagem de erros
-# Elas substituirão as padrões do pyKyorinrin no crawler que será analisado
+# Elas substituirão as padrões do pyKyourinrin no crawler que será analisado
 class DataBaseFak:
     def __init__(self):
         self.sql = []

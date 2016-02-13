@@ -9,12 +9,12 @@ def path_parent(path):
     return os.path.abspath(os.path.join(path, os.pardir))
 
 folder_this_file = os.path.dirname(os.path.realpath(__file__))
-folder_pyKyorinrin = path_parent(path_parent(folder_this_file))
-sys.path.append(path_parent(folder_pyKyorinrin))
-sys.path.append(folder_pyKyorinrin)
-sys.path.append(folder_pyKyorinrin + '/crawler')
+folder_pyKyourinrin = path_parent(path_parent(folder_this_file))
+sys.path.append(path_parent(folder_pyKyourinrin))
+sys.path.append(folder_pyKyourinrin)
+sys.path.append(folder_pyKyourinrin + '/crawler')
 
-import pyKyorinrin.driver.maltego.lib_files
+import pyKyourinrin.driver.maltego.lib_files
 
 def execute_crawler():
     if 'populator_crawler' in args.keys():
@@ -149,8 +149,8 @@ def generate_files():
         crawler_populator.append(current_crawler)
 
     # primitives
-    for current_xml in os.listdir(folder_pyKyorinrin + '/primitives/'):
-        crawler_root = ET.parse(folder_pyKyorinrin + '/primitives/' + current_xml).getroot()
+    for current_xml in os.listdir(folder_pyKyourinrin + '/primitives/'):
+        crawler_root = ET.parse(folder_pyKyourinrin + '/primitives/' + current_xml).getroot()
         current_xml = current_xml[:-4]
         primitives_names.append(current_xml)
 
@@ -170,7 +170,7 @@ def generate_files():
     os.makedirs(dir_save_files)
     os.makedirs(dir_save_files + '/local')
 
-    mt = lib_files.MaltegoTransform('/usr/bin/python3', folder_pyKyorinrin, dir_save_files)
+    mt = lib_files.MaltegoTransform('/usr/bin/python3', folder_pyKyourinrin, dir_save_files)
 
     # crawler arbitrário get_info_all
     mt.new_transform('get_info_all', [i for i in primitives_names], 'get_info_all')
@@ -210,7 +210,7 @@ if sys.argv[1] == 'generate_files':
     generate_files()
 else:
     args = parse_arguments(sys.argv[-1])
-    from pyKyorinrin.database import ManagerDatabase
+    from pyKyourinrin.database import ManagerDatabase
     db = ManagerDatabase(trigger=False)
 
     if sys.argv[1] == 'execute_crawler':

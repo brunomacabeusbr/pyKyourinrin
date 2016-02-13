@@ -36,8 +36,8 @@ class GraphDependencies:
         info_primitive = []
         info_crawler = []
 
-        path_pykyorinrin = os.path.dirname(__file__)
-        xml_root = ET.parse(path_pykyorinrin + '/primitives/' + self.primitive_name + '.xml').getroot()
+        path_pykyourinrin = os.path.dirname(__file__)
+        xml_root = ET.parse(path_pykyourinrin + '/primitives/' + self.primitive_name + '.xml').getroot()
         for current_info in xml_root.findall('column'):
             info_primitive.append(current_info.find('name').text)
             self.graph.add_node(current_info.find('name').text)

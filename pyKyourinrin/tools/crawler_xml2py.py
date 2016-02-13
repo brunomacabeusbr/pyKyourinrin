@@ -43,7 +43,7 @@ def check_black_list(name, black_list):
     for i in black_list:
         if i[1] == 'first':
             if name[:len(i[0])] == i[0]:
-                raise ValueError('O nome "{}" não pode ser usado, pois começa com "{}", que é usado pelo pyKyorinrin'.format(name, i[0]))
+                raise ValueError('O nome "{}" não pode ser usado, pois começa com "{}", que é usado pelo pyKyourinrin'.format(name, i[0]))
         elif i[1] == 'equal':
             if name == i[0]:
                 raise ValueError('O nome "{}" não pode ser usado, pois é uma palavra reservada'.format(name))
