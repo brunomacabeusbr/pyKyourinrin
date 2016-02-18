@@ -149,6 +149,10 @@ class ManagerDatabase:
                                  'uma vez em que esse crawler não recebeu como parâmetro um id de primitive')
 
             # Verificar se a primitive row já existe e, caso não exista, cria
+            # todo: essa checagem é otimista, pois não considera o seguinte caso:
+            #  suponha que o filtro seja pelo nome "João", e no meu banco eu tenha uma pessoa que não sei o nome e um que se chame 1 João,
+            #  então dará certo, pois como só tem uma pessoa que cumpra o filtro, e assim editará essa única primitive row,
+            #  porém, a pessoa em que eu não sei o nome pode se chamar João e acabar editando a errada
             count_people = self.count_primitive_rows_with_this_filters(primitive_filter, primitive_name)
             if count_people == 0:
                 self.new_primitive_row(primitive_filter, primitive_name)
@@ -165,6 +169,11 @@ class ManagerDatabase:
             self.execute("UPDATE " + primitive_name +
                          " SET " + ','.join('{}="{}"'.format(key, val) for key, val in column_and_value.items()) +
                          where_statement)
+
+        # Retornar primitive id que foi editado - isso é útil para crawler nascente
+        return self.execute("SELECT id FROM %s WHERE %s" %
+                            (primitive_name,
+                             'AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in primitive_filter.items()))).fetchone()[0]
 
     def crawler_list_status(self, primitive_id, primitive_name):
         return self.select_column_and_value(

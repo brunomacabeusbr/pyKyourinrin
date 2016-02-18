@@ -190,8 +190,7 @@ class CrawlerPortalTransparencia(Crawler):
 
             # todo: precisa lidar com o caso do cpf ser parcial para poder salva-lo e usa-lo
             if primitive_peoples is None:
-                cls.db.update_primitive_row({}, primitive_filter={'name': people_name}, primitive_name='primitive_peoples') # chamar esse método passando {} é útil para criar a primitive row caso não exista
-                primitive_id = cls.db.get_primitive_id_by_filter({'name': people_name}, 'primitive_peoples')
+                primitive_id = cls.db.update_primitive_row({}, primitive_filter={'name': people_name}, primitive_name='primitive_peoples') # chamar esse método passando {} é útil para criar a primitive row caso não exista
             else:
                 cls.db.update_primitive_row({'name': people_name})
                 primitive_id = primitive_peoples

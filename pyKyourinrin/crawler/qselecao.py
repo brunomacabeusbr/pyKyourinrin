@@ -155,31 +155,31 @@ class CrawlerQSelecao(Crawler):
             if r.text[:43] == 'Não foi possível obter os dados desta etapa':
                 return
 
-            spanPublicTender =  '<span style="display:inline-block;font-family:Arial;font-size:8pt;font-weight:bold;height:4px;width:180px;position:absolute;left:0px;top:2px;width:680px;Height:15px;text-align:center;">'
-            spanCourse = '<span style="display:inline-block;font-family:Arial;font-size:8pt;height:4px;width:155px;position:absolute;left:113px;top:123px;width:586px;Height:15px;text-align:left;">'
-            spanName = '<span style="display:inline-block;font-family:Arial;font-size:8pt;height:4px;width:155px;position:absolute;left:117px;top:43px;width:586px;Height:15px;text-align:left;">'
-            spanIdentity = '<span style="display:inline-block;font-family:Arial;font-size:8pt;height:4px;width:30px;position:absolute;left:113px;top:57px;width:113px;Height:15px;text-align:left;">'
-            spanBirthday = '<span style="display:inline-block;font-family:Arial;font-size:8pt;height:4px;width:30px;position:absolute;left:330px;top:57px;width:113px;Height:15px;text-align:left;">'
+            span_public_tender =  '<span style="display:inline-block;font-family:Arial;font-size:8pt;font-weight:bold;height:4px;width:180px;position:absolute;left:0px;top:2px;width:680px;Height:15px;text-align:center;">'
+            span_course = '<span style="display:inline-block;font-family:Arial;font-size:8pt;height:4px;width:155px;position:absolute;left:113px;top:123px;width:586px;Height:15px;text-align:left;">'
+            span_name = '<span style="display:inline-block;font-family:Arial;font-size:8pt;height:4px;width:155px;position:absolute;left:117px;top:43px;width:586px;Height:15px;text-align:left;">'
+            span_identity = '<span style="display:inline-block;font-family:Arial;font-size:8pt;height:4px;width:30px;position:absolute;left:113px;top:57px;width:113px;Height:15px;text-align:left;">'
+            span_birthday = '<span style="display:inline-block;font-family:Arial;font-size:8pt;height:4px;width:30px;position:absolute;left:330px;top:57px;width:113px;Height:15px;text-align:left;">'
 
-            regexPublicTender = re.compile(spanPublicTender + '(.*?)</span>')
-            regexCourse = re.compile(spanCourse + '(.*?)</span>')
-            regexName = re.compile(spanName + '(.*?)</span>')
-            regexIdentity = re.compile(spanIdentity + '(.*?)</span>')
-            regexBirthday = re.compile(spanBirthday + '(\d+)/(\d+)/(\d+)</span>')
+            regex_public_tender = re.compile(span_public_tender + '(.*?)</span>')
+            regex_course = re.compile(span_course + '(.*?)</span>')
+            regex_name = re.compile(span_name + '(.*?)</span>')
+            regex_identity = re.compile(span_identity + '(.*?)</span>')
+            regex_birthday = re.compile(span_birthday + '(\d+)/(\d+)/(\d+)</span>')
 
-            publicTender =  regexPublicTender.search(r.text).group(1)
-            course = regexCourse.search(r.text).group(1)
-            peopleName = regexName.search(r.text).group(1)
-            peopleBirthdayDay, peopleBirthdayMonth, peopleBirthdayYear = regexBirthday.search(r.text).groups()
-            peopleIdentity = re.sub('[^\d]+', '', regexIdentity.search(r.text).group(1))
+            publicTender =  regex_public_tender.search(r.text).group(1)
+            course = regex_course.search(r.text).group(1)
+            people_name = regex_name.search(r.text).group(1)
+            people_birthday_day, people_birthday_month, people_birthday_year = regex_birthday.search(r.text).groups()
+            people_identity = re.sub('[^\d]+', '', regex_identity.search(r.text).group(1))
 
-            cls.db.update_primitive_row({'birthday_day': peopleBirthdayDay, 'birthday_month': peopleBirthdayMonth, 'birthday_year': peopleBirthdayYear},
-                                        primitive_filter={'name': peopleName}, primitive_name='primitive_peoples')
-            if peopleIdentity.isdecimal():
+            infos = {'birthday_day': people_birthday_day, 'birthday_month': people_birthday_month, 'birthday_year': people_birthday_year}
+            if people_identity.isdecimal():
                 # há casos a serem lidados como em http://qselecao.ifce.edu.br/cartao_identificacao_dinamico.aspx?idcandidatoconcurso=328680&etapa=1
-                cls.db.update_primitive_row({'identity': peopleIdentity}, primitive_filter={'name': peopleName}, primitive_name='primitive_peoples',)
+                infos['identity'] = people_identity
 
-            primitive_id = cls.db.get_primitive_id_by_filter({'name': peopleName}, 'primitive_peoples')
+            primitive_id = cls.db.update_primitive_row(infos, primitive_filter={'name': people_name}, primitive_name='primitive_peoples',)
+
             try:
                 cls.update_my_table({}, primitive_id=primitive_id, primitive_name='primitive_peoples')
             except:
