@@ -147,6 +147,8 @@ class ManagerDatabase:
             if primitive_filter is None or primitive_name is None:
                 raise ValueError('É necessário fornecer o parâmetro "primitive_filter" e "primitive_name" para eu saber qual primitive row eu irei atualizar,'
                                  'uma vez em que esse crawler não recebeu como parâmetro um id de primitive')
+            if primitive_name not in Crawler.temp_current_crawler.primitive_required():
+                raise ValueError('A primitive que você está tentando acessar, "{}", não está listada entre as requeridas pelo crawler'.format(primitive_name))
 
             # Verificar se a primitive row já existe e, caso não exista, cria
             # todo: essa checagem é otimista, pois não considera o seguinte caso:
@@ -171,9 +173,7 @@ class ManagerDatabase:
                          where_statement)
 
         # Retornar primitive id que foi editado - isso é útil para crawler nascente
-        return self.execute("SELECT id FROM %s WHERE %s" %
-                            (primitive_name,
-                             'AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in primitive_filter.items()))).fetchone()[0]
+        return self.execute("SELECT id FROM %s %s" % (primitive_name, where_statement)).fetchone()[0]
 
     def crawler_list_status(self, primitive_id, primitive_name):
         return self.select_column_and_value(

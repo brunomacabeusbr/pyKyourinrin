@@ -42,6 +42,9 @@ class Crawler:
                 raise ValueError('É necessário fornecer o parâmetro "primitive_id" e "primitive_name",'
                                  'uma vez em que esse crawler não recebeu como parâmetro um id de primitive')
 
+        if primitive_name not in Crawler.temp_current_crawler.primitive_required():
+            raise ValueError('A primitive que você está tentando acessar, "{}", não está listada entre as requeridas pelo crawler'.format(primitive_name))
+
         # Salvar no banco
         if table is None:
             table = cls.name()
@@ -77,6 +80,9 @@ class Crawler:
             if primitive_id is None or primitive_name is None:
                 raise ValueError('É necessário fornecer o parâmetro "primitive_id" e "primitive_name",'
                                  'uma vez em que esse crawler não recebeu como parâmetro um id de primitive')
+
+        if primitive_name not in Crawler.temp_current_crawler.primitive_required():
+            raise ValueError('A primitive que você está tentando acessar, "{}", não está listada entre as requeridas pelo crawler'.format(primitive_name))
 
         # Salvar no banco
         status = (-1, 1)[status]
@@ -236,9 +242,17 @@ class GetDependencies:
         del Crawler.temp_current_primitive_name
         del Crawler.temp_current_primitive_id
 
-def harvest_and_commit(harvest_fun, *args, **kwargs):
+def encapsulate_harvest(crawler_and_harvest, *args, **kwargs):
+    # "Passar" de forma implícita variável temporária ao Crawler, útil na hora de salvar as infos no banco de dados
+    Crawler.temp_current_crawler = crawler_and_harvest[0]
+
+    # Chamar método harvest
+    result = crawler_and_harvest[1](*args, **kwargs)
+
+    # Após a colheita, para evitar problemas, apagará a variável temporária
+    del Crawler.temp_current_crawler
+
     # Implicitamente, sempre será commitada as alterações ao banco de dados ao finalizar a colheita
-    result = harvest_fun(*args, **kwargs)
     Crawler.db.commit()
     return result
 
@@ -246,11 +260,12 @@ import copy
 import functools
 
 for i in Crawler.__subclasses__():
-    i.harvest_debug = copy.copy(i.harvest) # cópia direta do método harvest, útil em debug ou pegar o cabeçalho do harvest
+    i.harvest_debug = copy.copy(i.harvest) # cópia direta do método harvest, útil em debug ou para pegar o cabeçalho do harvest
+
     if i.have_dependencies():
-        i.harvest = functools.partial(harvest_and_commit, GetDependencies(i))
-    else:
-        i.harvest = functools.partial(harvest_and_commit, i.harvest)
+        i.harvest = GetDependencies(i)
+
+    i.harvest = functools.partial(encapsulate_harvest, (i, i.harvest))
 
 # Iniciar as threads dos triggers dos crawlers que tiverem
 # Essa função será chamada ao final da iniciação do ManagerDatabase
