@@ -1,0 +1,39 @@
+<crawler>
+    <primitive_required>
+        <primitive harvest_param="">news</primitive>
+    </primitive_required>
+
+    <database>
+        <table_main>
+
+        </table_main>
+
+        <table_secondary>
+            <name>sentences</name>
+            <column>
+                <name>text</name>
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
+
+        <column_export>
+            <name>key_sentences</name>
+        </column_export>
+    </database>
+
+    <dependencies>
+        <route>
+            <dependence>title</dependence>
+            <dependence>article</dependence>
+        </route>
+    </dependencies>
+
+    <crop>
+        <info>key_sentences</info>
+    </crop>
+
+    <harvest>
+        <url></url>
+        <param_additional>total_sentences</param_additional>
+    </harvest>
+</crawler>
