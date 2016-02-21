@@ -169,7 +169,7 @@ class ManagerDatabase:
 
         if len(column_and_value) > 0:
             self.execute("UPDATE " + primitive_name +
-                         " SET " + ','.join('{}="{}"'.format(key, val) for key, val in column_and_value.items()) +
+                         " SET " + ','.join("{}='{}'".format(key, str(val).replace("'", "''")) for key, val in column_and_value.items()) +
                          where_statement)
 
         # Retornar primitive id que foi editado - isso é útil para crawler nascente
