@@ -1,0 +1,49 @@
+<crawler>
+    <primitive_required>
+        <primitive>news</primitive>
+    </primitive_required>
+
+    <database>
+        <table_main>
+
+        </table_main>
+
+        <table_secondary>
+            <name>tags</name>
+            <column>
+                <name>name</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>url</name>
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
+
+        <column_export>
+            <name>tags_list</name>
+        </column_export>
+    </database>
+
+    <dependencies>
+        <route>
+
+        </route>
+    </dependencies>
+
+    <crop>
+        <info>title</info>
+        <info>linha_fina</info>
+        <info>article</info>
+        <info>date_day</info>
+        <info>date_month</info>
+        <info>date_year</info>
+        <info>url</info>
+    </crop>
+
+    <harvest>
+        <url>http://g1.globo.com/index.html</url>
+        <param_additional>specific_url_news</param_additional>
+        <param_additional>specific_url_group</param_additional>
+    </harvest>
+</crawler>

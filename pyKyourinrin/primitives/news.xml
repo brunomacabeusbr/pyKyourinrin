@@ -1,0 +1,30 @@
+<primitive>
+    <column>
+        <name>title</name>
+        <type>TEXT</type>
+    </column>
+    <column>
+        <name>linha_fina</name>
+        <type>TEXT</type>
+    </column>
+    <column>
+        <name>article</name>
+        <type>TEXT</type>
+    </column>
+    <column>
+        <name>date_day</name>
+        <type>INTEGER</type>
+    </column>
+    <column>
+        <name>date_month</name>
+        <type>INTEGER</type>
+    </column>
+    <column>
+        <name>date_year</name>
+        <type>INTEGER</type>
+    </column>
+    <column>
+        <name>url</name>
+        <type>TEXT</type>
+    </column>
+</primitive>
