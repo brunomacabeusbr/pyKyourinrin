@@ -56,7 +56,8 @@ class Crawler:
         column_and_value = {i: j for i, j in column_and_value.items() if j is not None}
         if len(column_and_value) > 0:
             Crawler.db.execute(
-                "INSERT INTO " + table + " (" + primitive_name + "_id," + ','.join(column_and_value.keys()) + ") VALUES (?," + ('"' + '","'.join(list(map(str, column_and_value.values()))) + '"') + ")",
+                "INSERT INTO " + table + " (" + primitive_name + "_id," + ','.join(column_and_value.keys()) + ") "
+                "VALUES (?," + ("'" + '","'.join([str(current_value).replace("'", "''") for current_value in column_and_value.values()]) + "'") + ")",
                 (primitive_id,)
             )
         else:
