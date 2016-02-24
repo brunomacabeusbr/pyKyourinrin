@@ -1,0 +1,63 @@
+<crawler>
+    <primitive_required>
+        <primitive harvest_param="">news</primitive>
+    </primitive_required>
+
+    <database>
+        <table_main>
+
+        </table_main>
+
+        <table_secondary>
+            <name>mentioned</name>
+            <column>
+                <name>name</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>name_url</name>
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
+
+        <table_secondary>
+            <name>mentioned_types</name>
+            <reference>mentioned</reference>
+            <column>
+                <name>word_type</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>word_type_url</name>
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
+
+        <table_secondary>
+            <name>mentioned_surface_article</name>
+            <reference>mentioned</reference>
+            <column>
+                <name>name_at_article</name>
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
+
+        <column_export>
+            <name>concepts</name>
+        </column_export>
+    </database>
+
+    <dependencies>
+        <route>
+            <dependence>article</dependence>
+        </route>
+    </dependencies>
+
+    <crop>
+        <info>concept_quotes</info>
+    </crop>
+
+    <harvest>
+        <url></url>
+    </harvest>
+</crawler>
