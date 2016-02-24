@@ -57,7 +57,7 @@ class Crawler:
         if len(column_and_value) > 0:
             Crawler.db.execute(
                 "INSERT INTO " + table + " (" + primitive_name + "_id," + ','.join(column_and_value.keys()) + ") "
-                "VALUES (?," + ("'" + '","'.join([str(current_value).replace("'", "''") for current_value in column_and_value.values()]) + "'") + ")",
+                "VALUES (?," + ("'" + "','".join([str(current_value).replace("'", "''") for current_value in column_and_value.values()]) + "'") + ")",
                 (primitive_id,)
             )
         else:
