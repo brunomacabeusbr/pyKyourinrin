@@ -22,7 +22,7 @@ class CrawlerPortalTransparencia(Crawler):
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
                             'primitive_peoples_id INTEGER,'
-                            'reference_remuneration_date INTEGER PRIMARY KEY AUTOINCREMENT,'
+                            'reference INTEGER PRIMARY KEY AUTOINCREMENT,'
                             'month INTEGER,'
                             'year INTEGER'
                         ');' % (self.name() + '_remuneration_date'))
@@ -48,7 +48,7 @@ class CrawlerPortalTransparencia(Crawler):
         def salary_average(read):
             salary_total = 0
             for i in read['remuneration_date']:
-                for i2 in i['reference_remuneration_date']:
+                for i2 in i['reference']['remuneration_info']:
                     salary_total += i2['value']
 
             return salary_total / len(read['remuneration_date'])

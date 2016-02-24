@@ -83,7 +83,7 @@ def write_tables_secondary():
         tables_secondary[i] = tables_secondary[i]
         to_return += "        self.db.execute('CREATE TABLE IF NOT EXISTS %s('\n"
         if i in reference_list.values():
-            tables_secondary[i].insert(0, ('reference_' + i, 'INTEGER PRIMARY KEY AUTOINCREMENT'))
+            tables_secondary[i].insert(0, ('reference', 'INTEGER PRIMARY KEY AUTOINCREMENT'))
         if i in reference_list.keys():
             tables_secondary[i].insert(0, ('reference_' + reference_list[i], 'INTEGER'))
             tables_secondary[i].append(('FOREIGN', 'KEY(reference_' + reference_list[i] + ') REFERENCES %s(reference_' + reference_list[i] + ')'))

@@ -210,29 +210,48 @@ class ManagerDatabase:
 
             # Tabelas secundárias
             if cls.name() in crawler_list_success:
+                # Adicionar valores das tabelas secundárias à variável "dict_infos"
                 for current in cls.read_my_secondary_tables():
                     table = current['table']
 
                     if 'reference' not in current.keys():
-                        x = self.select_column_and_value_many(
+                        # ler tabela não referenciada
+                        rows = self.select_column_and_value_many(
                             "SELECT * FROM %s WHERE %s=?" % (cls.name() + '_' + table, 'primitive_' + primitive_name + '_id'), (primitive_id,),
                             discard=['primitive_' + primitive_name + '_id']
                         )
 
-                        dict_infos.update({table: x})
+                        # no caso de colunas para referencia, precisamos que seja um dicionário,
+                        # para posteriormente adicionar os valores das tabelas referenciadas
+                        for current_row in rows:
+                            if 'reference' in current_row.keys():
+                                current_row['reference'] = {'reference_number': current_row['reference']}
+
+                        # atalizar dict_infos
+                        dict_infos.update({table: rows})
                     else:
+                        # ler a tabela referenciada; substitui o id da coluna de referência para o seu respectivo conteúdo no banco
                         reference_table = current['reference']
-                        reference_column = 'reference_' + reference_table
 
                         for i in dict_infos[reference_table]:
-                            referenceid = i[reference_column]
-                            x = self.select_column_and_value_many(
-                                "SELECT * FROM %s WHERE %s=?" % (cls.name() + '_' + table, reference_column), (referenceid,),
-                                discard=['primitive_' + primitive_name + '_id']
+                            referenceid = i['reference']['reference_number']
+                            rows = self.select_column_and_value_many(
+                                "SELECT * FROM %s WHERE %s=?" % (cls.name() + '_' + table, 'reference_' + reference_table), (referenceid,),
+                                discard=['primitive_' + primitive_name + '_id', 'reference_' + reference_table]
                             )
 
-                            i[reference_column] = x
+                            i['reference'][table] = rows
 
+                # Em "dict_infos", apagar key temporária "reference_number" (ela é necessária para ligar tabela referenciada e nada mais além após isso)
+                for k, v in dict_infos.items():
+                    if type(v) is not list:
+                        continue
+
+                    for i in v:
+                        if 'reference' in i:
+                            del i['reference']['reference_number']
+
+                # Adicionar colunas exportadas
                 for current in cls.column_export():
                     fieldnames[current['column_name']] = current['how'](dict_infos)
             else:
