@@ -14,6 +14,9 @@ sys.path.append(path_parent(folder_pyKyourinrin))
 sys.path.append(folder_pyKyourinrin)
 sys.path.append(folder_pyKyourinrin + '/crawler')
 
+#
+DEBUG = False # coloque True para ver o parâmetro que o Maltego manda para cá através de um transform
+
 import pyKyourinrin.driver.maltego.lib_files
 
 def execute_crawler():
@@ -212,6 +215,14 @@ if sys.argv[1] == 'generate_files':
     generate_files()
 else:
     args = parse_arguments(sys.argv[-1])
+
+    if DEBUG:
+        # coloque True caso queira debugar e ver a mensagem
+        mm = lib_files.MaltegoMessage()
+        x = mm.add_entity('pykyourinrin.info', value='#'.join(['{}={}'.format(k, v) for k, v in args.items()]))
+        mm.show()
+        exit()
+
     from pyKyourinrin.database import ManagerDatabase
     db = ManagerDatabase(trigger=False)
 
