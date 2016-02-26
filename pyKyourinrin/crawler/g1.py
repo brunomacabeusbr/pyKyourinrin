@@ -24,10 +24,11 @@ class CrawlerG1(Crawler):
     @staticmethod
     def column_export():
         def tags_list(read):
-            return [(i['name'], i['url']) for i in read['tags']]
+            return [{'name': i['name'], 'url': i['url']} for i in read['tags']]
         return (
             {'column_name': 'tags_list', 'how': tags_list},
         )
+    
     @staticmethod
     def name():
         return 'g1'
@@ -77,7 +78,6 @@ class CrawlerG1(Crawler):
             for i in phantom.find_element_by_class_name('lista-de-entidades').find_elements_by_tag_name('a'):
                 cls.update_my_table({'name': i.text, 'url': i.get_attribute('href')}, primitive_id=primitive_id, primitive_name='primitive_news', table='tags')
             cls.update_crawler_status(True, primitive_id=primitive_id, primitive_name='primitive_news')
-            Crawler.db.commit()
 
         if specific_url_news is not None:
             get_new(specific_url_news)
