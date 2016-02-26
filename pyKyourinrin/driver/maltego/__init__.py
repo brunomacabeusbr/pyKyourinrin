@@ -59,36 +59,38 @@ def get_info_all():
 
         if type(v) is list:
             x = mm.add_entity('pykyourinrin.info_list', value='{} from {} {}: {} sub-itens'.format(k, args['primitive_name'], args['table_id'], len(v)))
-            x.add_additional_fields('index', '-1')
+            x.add_additional_fields('dict_path', "['" + k + "']")
         else:
             x = mm.add_entity('pykyourinrin.info', value='{}: {}'.format(k, v))
 
         x.add_additional_fields('from_primitive_id', args['table_id'])
         x.add_additional_fields('from_primitive_name', args['primitive_name'])
-        x.add_additional_fields('column', k)
     mm.show()
 
 
 def unpack_list():
-    infos = db.get_primitive_row_info_all(int(args['from_primitive_id']), args['from_primitive_name'])[args['column']]
+    infos = db.get_primitive_row_info_all(int(args['from_primitive_id']), args['from_primitive_name'])
+    infos = eval('infos' + args['dict_path'])
 
     mm = lib_files.MaltegoMessage()
-    if args['index'] == '-1':
-        # se não tiver um index válido, então trata-se do primeiro unpack
-        for index in range(len(infos)):
-            x = mm.add_entity('pykyourinrin.info_list', value='{} from {} {}: index {}'.format(args['column'], args['from_primitive_name'], args['from_primitive_id'], index))
+
+    if type(infos) is list:
+        for i in range(len(infos)):
+            x = mm.add_entity('pykyourinrin.info_list', value='sub-iten {} from {} by {} {}'.format(i, args['dict_path'], args['from_primitive_name'], args['from_primitive_id']))
+            x.add_additional_fields('dict_path', args['dict_path'] + '[' + str(i) + ']')
             x.add_additional_fields('from_primitive_id', args['from_primitive_id'])
             x.add_additional_fields('from_primitive_name', args['from_primitive_name'])
-            x.add_additional_fields('column', args['column'])
-            x.add_additional_fields('index', index)
     else:
-        # segundo unpack
-        target = infos[int(args['index'])]
-        for k, v in target.items():
-            x = mm.add_entity('pykyourinrin.info', value='{}: {}'.format(k, v))
+        for k, v in infos.items():
+            if type(v) is list:
+                x = mm.add_entity('pykyourinrin.info_list', value='{} from {} by {} {}'.format(k, args['dict_path'], args['from_primitive_name'], args['from_primitive_id']))
+                x.add_additional_fields('dict_path', args['dict_path'] + "['" + k + "']")
+            else:
+                x = mm.add_entity('pykyourinrin.info', value='{}: {}'.format(k, v))
+
             x.add_additional_fields('from_primitive_id', args['from_primitive_id'])
             x.add_additional_fields('from_primitive_name', args['from_primitive_name'])
-            x.add_additional_fields('column', args['column'])
+
     mm.show()
 
 
