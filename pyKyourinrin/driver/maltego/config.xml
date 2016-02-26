@@ -3,5 +3,6 @@
         <primitive name="peoples">AdultMale</primitive>
         <primitive name="firm">Company</primitive>
         <primitive name="cellphone">MobilePhoneGolden</primitive>
+        <primitive name="news">Document</primitive>
     </primitive_icons>
 </maltego_config>
