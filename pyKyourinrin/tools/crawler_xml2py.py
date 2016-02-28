@@ -95,8 +95,22 @@ def write_tables_secondary():
     def add_key_reference(from_table):
         if from_table not in reference_list.keys():
             return ''
+        elif reference_list[from_table] not in reference_list:
+            return ", 'reference': '{}'".format(reference_list[from_table])
+        else:
+            predecessor_reference = []
+            def make_predecessor_reference(info):
+                predecessor_reference.append(info)
 
-        return ", 'reference': '{}'".format(reference_list[from_table])
+                if info not in reference_list.keys():
+                    return
+                else:
+                    make_predecessor_reference(reference_list[info])
+
+            make_predecessor_reference(from_table)
+            predecessor_reference = predecessor_reference[1:]
+            predecessor_reference = predecessor_reference[::-1]
+            return ", 'reference': ({})".format(inter_to_tuple(predecessor_reference))
 
     to_return += '    @staticmethod\n    def read_my_secondary_tables():\n        return (\n'
     to_return += inter_to_tuple_multi_line(["{'table': '" + i + "'" + add_key_reference(i) + "}" for i in tables_secondary.keys()], 3)

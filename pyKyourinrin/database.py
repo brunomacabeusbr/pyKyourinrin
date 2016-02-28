@@ -232,13 +232,39 @@ class ManagerDatabase:
                     else:
                         # ler a tabela referenciada; substitui o id da coluna de referência para o seu respectivo conteúdo no banco
                         reference_table = current['reference']
+                        if type(reference_table) == tuple:
+                            inter = eval( # código para acessar criar array com as colunas a ser acessadas e modificadas com o conteúdo da referência
+                                '[' +\
+                                    "{}['reference'][reference_table[-1]] ".format(chr(ord('i') + len(reference_table) - 2)) +\
+                                    'for i in dict_infos[reference_table[0]] ' +\
+                                    ' '.join(
+                                        [
+                                            "for {} in {}['reference'][reference_table[{}]]".format(
+                                                chr(ord('i') + i), chr(ord('i') + i - 1), i
+                                            )
+                                            for i in range(1, len(reference_table) - 1)
+                                        ]
+                                    ) +\
+                                ']',
+                                {'reference_table': reference_table, 'dict_infos': dict_infos}
+                            )
+                            inter = [j for i in inter for j in i]
+                            reference_table = reference_table[-1]
+                        else:
+                            inter = dict_infos[reference_table]
 
-                        for i in dict_infos[reference_table]:
+                        for i in inter:
                             referenceid = i['reference']['reference_number']
                             rows = self.select_column_and_value_many(
                                 "SELECT * FROM %s WHERE %s=?" % (cls.name() + '_' + table, 'reference_' + reference_table), (referenceid,),
                                 discard=['primitive_' + primitive_name + '_id', 'reference_' + reference_table]
                             )
+
+                            # pode ser que uma tabela referenciada referencie outra tabela
+                            # então precisamos tomar o mesmo cuidado que foi feito com as tabelas não referenciada
+                            for current_row in rows:
+                                if 'reference' in current_row.keys():
+                                    current_row['reference'] = {'reference_number': current_row['reference']}
 
                             i['reference'][table] = rows
 
