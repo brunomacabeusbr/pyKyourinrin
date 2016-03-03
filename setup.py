@@ -8,7 +8,8 @@ setup(
         'selenium',
         'networkx',
         'matplotlib',
-        'pyslibtesseract'
+        'pyslibtesseract',
+        'aylien-apiclient'
         # todo: precisa exigir o phantomjs
     ],
     packages=['pyKyorinrin']

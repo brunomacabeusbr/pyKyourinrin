@@ -30,6 +30,7 @@ class CrawlerAylienSummarize(Crawler):
         return (
             {'column_name': 'key_sentences', 'how': key_sentences},
         )
+
     @staticmethod
     def name():
         return 'aylien_summarize'
@@ -48,6 +49,8 @@ class CrawlerAylienSummarize(Crawler):
 
     @classmethod
     def harvest(cls, primitive_news=None, dependencies=None, total_sentences=5):
+        # http://docs.aylien.com/docs/summarize
+
         if primitive_news is None:
             raise ValueError('Você obrigatorialmente deve fornecer um id de primitive news!')
 

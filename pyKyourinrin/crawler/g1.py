@@ -28,7 +28,7 @@ class CrawlerG1(Crawler):
         return (
             {'column_name': 'tags_list', 'how': tags_list},
         )
-    
+
     @staticmethod
     def name():
         return 'g1'
