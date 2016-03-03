@@ -1,5 +1,6 @@
 import sqlite3
 from crawler import Crawler, start_triggers
+import copy
 
 
 class ManagerDatabase:
@@ -188,9 +189,10 @@ class ManagerDatabase:
 
     def get_primitive_row_info_all(self, primitive_id, primitive_name):
         # Recolher infos da tabela principal dele
-        fieldnames = self.select_column_and_value(
+        primitive_table = self.select_column_and_value(
             "SELECT * FROM primitive_" + primitive_name + " WHERE id=?", (primitive_id,), discard=['id']
         )
+        fieldnames = copy.copy(primitive_table)
 
         # Recolher infos da tabela dos crawlers
         crawler_required = list(self.crawler_list_status(primitive_id, primitive_name).keys())
@@ -233,7 +235,7 @@ class ManagerDatabase:
                         # ler a tabela referenciada; substitui o id da coluna de referência para o seu respectivo conteúdo no banco
                         reference_table = current['reference']
                         if type(reference_table) == tuple:
-                            inter = eval( # código para acessar criar array com as colunas a ser acessadas e modificadas com o conteúdo da referência
+                            inter = eval( # código para criar array com as colunas a serem acessadas e modificadas com o conteúdo da referência
                                 '[' +\
                                     "{}['reference'][reference_table[-1]] ".format(chr(ord('i') + len(reference_table) - 2)) +\
                                     'for i in dict_infos[reference_table[0]] ' +\
@@ -279,7 +281,7 @@ class ManagerDatabase:
 
                 # Adicionar colunas exportadas
                 for current in cls.column_export():
-                    fieldnames[current['column_name']] = current['how'](dict_infos)
+                    fieldnames[current['column_name']] = current['how'](dict(dict_infos, **primitive_table))
             else:
                 for current in cls.column_export():
                     fieldnames[current['column_name']] = None
