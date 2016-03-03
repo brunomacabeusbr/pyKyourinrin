@@ -1,0 +1,252 @@
+<!--alguns sites do esaj tem particularidades:
+        o do paraná exige captchar até para consulta, enquanto os outros dois não, e está invertida a ordem de "petições" com "incidentes"
+        o do ceará exige senha para ver o documento de movimentação, enquanto os outros dois não -->
+
+<!-- sites:
+    ceará: http://esaj.tjce.jus.br/cpopg/open.do
+     | sempre requer senha para visualizar documentos
+    rio grande do norte: http://esaj.tjrn.jus.br/cpo/pg/open.do
+    paraná: http://www.21varacivel.com.br/cpo/pg/open.do
+     | exige captchar até para consulta
+    são paulo: https://esaj.tjsp.jus.br/cpopg/open.do
+     | em "parte", usa abreviações
+     | só requer senhas para processos em segredo de justiça
+-->
+
+<!-- se na busca obtiver só um resultado, irá direto para o processo, e não para lista -->
+
+<crawler>
+    <primitive_required>
+        <primitive harvest_param="">peoples</primitive>
+        <primitive harvest_param="">firm</primitive>
+    </primitive_required>
+
+    <database>
+        <table_main>
+
+        </table_main>
+
+        <table_secondary>
+            <name>processo</name>
+            <column>
+                <name>processo_number</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>processo_grau</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>classe</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>classe_area</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>assunto</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>juiz</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>valor_acao</name>
+                <type>FLOAT</type>
+            </column>
+            <column>
+                <name>url</name>
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
+
+        <table_secondary>
+            <name>partes</name>
+            <reference>processo</reference>
+            <column>
+                <name>principal</name>
+                <type>INTEGER</type>
+            </column>
+            <column>
+                <name>reu_preso</name>
+                <type>INTEGER</type>
+            </column>
+            <column>
+                <name>parte_type</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>parte_name</name>
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
+
+        <table_secondary>
+            <name>partes_justiciario</name>
+            <reference>partes</reference>
+            <column>
+                <name>justiciario_type</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>justiciario_name</name>
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
+
+        <table_secondary>
+            <name>movimentacoes</name>
+            <reference>processo</reference>
+            <column>
+                <name>data_day</name>
+                <type>INTEGER</type>
+            </column>
+            <column>
+                <name>data_month</name>
+                <type>INTEGER</type>
+            </column>
+            <column>
+                <name>data_year</name>
+                <type>INTEGER</type>
+            </column>
+            <column>
+                <name>descricao</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>documento_url</name> <!-- todo: talvez, o mais legal seja salvar o texto do documento, não apenas a url, como em http://esaj.tjce.jus.br/cdje/consultaSimples.do?cdVolume=6&nuDiario=1362&cdCaderno=2&nuSeqpagina=1 -->
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
+
+        <table_secondary>
+            <name>peticoes</name>
+            <reference>processo</reference>
+            <column>
+                <name>data_day</name>
+                <type>INTEGER</type>
+            </column>
+            <column>
+                <name>data_month</name>
+                <type>INTEGER</type>
+            </column>
+            <column>
+                <name>data_year</name>
+                <type>INTEGER</type>
+            </column>
+            <column>
+                <name>descricao</name>
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
+
+        <table_secondary>
+            <name>incidentes</name>
+            <reference>processo</reference>
+            <column>
+                <name>data_day</name>
+                <type>INTEGER</type>
+            </column>
+            <column>
+                <name>data_month</name>
+                <type>INTEGER</type>
+            </column>
+            <column>
+                <name>data_year</name>
+                <type>INTEGER</type>
+            </column>
+            <column>
+                <name>classe</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>href</name>
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
+
+        <table_secondary>
+            <name>audiencia</name>
+            <reference>processo</reference>
+            <column>
+                <name>data_day</name>
+                <type>INTEGER</type>
+            </column>
+            <column>
+                <name>data_month</name>
+                <type>INTEGER</type>
+            </column>
+            <column>
+                <name>data_year</name>
+                <type>INTEGER</type>
+            </column>
+            <column>
+                <name>audiencia</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>situacao</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>quantidade_pessoas</name>
+                <type>INTEGER</type>
+            </column>
+        </table_secondary>
+
+        <table_secondary>
+            <name>dados_delegacia</name>
+            <reference>processo</reference>
+            <column>
+                <name>documento</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>numero</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>distrito_policial</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>city</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>state</name>
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
+
+        <column_export>
+            <name>todo</name>
+        </column_export>
+    </database>
+
+    <dependencies>
+        <route>
+            <dependence>name</dependence>
+        </route>
+        <route>
+            <dependence>razao_social</dependence> <!-- todo: talvez o ideal seja o nome fantasia -->
+        </route>
+    </dependencies>
+
+    <crop>
+        <info>name_social</info>
+        <info>cia</info>
+        <info>name</info>
+        <info>name_monther</info>
+        <info>birthday_day</info>
+        <info>birthday_month</info>
+        <info>birthday_year</info>
+        <info>last_school_name</info>
+    </crop>
+
+    <harvest>
+        <url></url>
+    </harvest>
+</crawler>
