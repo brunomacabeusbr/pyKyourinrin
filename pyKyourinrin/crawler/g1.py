@@ -22,14 +22,6 @@ class CrawlerG1(Crawler):
         )
 
     @staticmethod
-    def column_export():
-        def tags_list(read):
-            return [{'name': i['name'], 'url': i['url']} for i in read['tags']]
-        return (
-            {'column_name': 'tags_list', 'how': tags_list},
-        )
-
-    @staticmethod
     def name():
         return 'g1'
 

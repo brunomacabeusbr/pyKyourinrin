@@ -40,18 +40,18 @@ class CrawlerPortalTransparencia(Crawler):
         return (
             {'table': 'job'},
             {'table': 'remuneration_date'},
-            {'table': 'remuneration_info', 'reference': 'remuneration_date'}
+            {'table': 'remuneration_info', 'reference': ('remuneration_date',)}
         )
 
     @staticmethod
     def column_export():
         def salary_average(read):
             salary_total = 0
-            for i in read['remuneration_date']:
-                for i2 in i['reference']['remuneration_info']:
+            for i in read['portal_transparencia_remuneration_date']:
+                for i2 in i['remuneration_info']:
                     salary_total += i2['value']
 
-            return salary_total / len(read['remuneration_date'])
+            return salary_total / len(read['portal_transparencia_remuneration_date'])
 
         def job(read):
             # Retorna o emprego principal da pessoa.
@@ -60,7 +60,7 @@ class CrawlerPortalTransparencia(Crawler):
             priority = {'Posto/Graduação': 0, 'Cargo Emprego': 1, 'Demais situações - agentes públicos': 2, 'Função ou Cargo de Confiança': 3}
 
             vou_ler = None
-            for i in read['job']:
+            for i in read['portal_transparencia_job']:
                 if vou_ler is None:
                     vou_ler = i
                 else:

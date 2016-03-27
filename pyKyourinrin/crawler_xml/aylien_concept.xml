@@ -41,10 +41,6 @@
                 <type>TEXT</type>
             </column>
         </table_secondary>
-
-        <column_export>
-            <name>concepts</name>
-        </column_export>
     </database>
 
     <dependencies>

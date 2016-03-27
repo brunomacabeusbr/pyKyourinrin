@@ -24,18 +24,6 @@ class CrawlerSimplesNacional(Crawler):
         )
 
     @staticmethod
-    def column_export():
-        def history_simples_nacional(read):
-            if len(read['previous_periods_simples_nacional']) > 0:
-                return read['previous_periods_simples_nacional']
-            else:
-                return None
-
-        return (
-            {'column_name': 'history_simples_nacional', 'how': history_simples_nacional},
-        )
-
-    @staticmethod
     def name():
         return 'simples_nacional'
 

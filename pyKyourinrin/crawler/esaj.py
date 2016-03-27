@@ -108,28 +108,29 @@ class CrawlerEsaj(Crawler):
     def read_my_secondary_tables():
         return (
             {'table': 'processo'},
-            {'table': 'partes', 'reference': 'processo'},
+            {'table': 'partes', 'reference': ('processo',)},
             {'table': 'partes_justiciario', 'reference': ('processo', 'partes')},
-            {'table': 'movimentacoes', 'reference': 'processo'},
-            {'table': 'peticoes', 'reference': 'processo'},
-            {'table': 'incidentes', 'reference': 'processo'},
-            {'table': 'audiencia', 'reference': 'processo'}
+            {'table': 'movimentacoes', 'reference': ('processo',)},
+            {'table': 'peticoes', 'reference': ('processo',)},
+            {'table': 'incidentes', 'reference': ('processo',)},
+            {'table': 'audiencia', 'reference': ('processo',)}
         )
 
     @staticmethod
     def column_export():
         def aliados_juridicos(read):
-            name_compare = read['name']
-
             added = []
             to_return = []
 
-            for i in read['processo']:
-                for j in i['reference']['partes']:
-                    if j['parte_name'] != name_compare:
+            for i in read['esaj_processo']:
+                for j in i['partes']:
+                    if j['parte_name'] != read['name']:
                         continue
 
-                    for l in j['reference']['partes_justiciario']:
+                    if 'partes_justiciario' not in j:
+                        continue
+
+                    for l in j['partes_justiciario']:
                         if l['justiciario_name'] not in added:
                             added.append(l['justiciario_name'])
                             to_return.append({'justiciario_name': l['justiciario_name'], 'justiciario_type': l['justiciario_type'], 'justiciario_count': 1})
@@ -149,10 +150,10 @@ class CrawlerEsaj(Crawler):
                     'processo_number': i['processo_number'],
                     'partes': [
                         {'parte_name': j['parte_name'], 'parte_type': j['parte_type']}
-                        for j in i['reference']['partes']
+                        for j in i['partes']
                     ]
                 }
-                for i in read['processo']
+                for i in read['esaj_processo']
             ]
 
         return (
@@ -239,7 +240,6 @@ class CrawlerEsaj(Crawler):
 
         # parse em todas as listas de processos colhidas nos sites
         for url in href_list:
-            print(url)
             phantom.get('about:blank')
             while phantom.current_url == 'about:blank':
                 phantom.get(url)

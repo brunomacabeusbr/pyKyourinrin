@@ -30,10 +30,6 @@
                 <type>TEXT</type>
             </column>
         </table_secondary>
-
-        <column_export>
-            <name>history_simples_nacional</name>
-        </column_export>
     </database>
 
     <dependencies>

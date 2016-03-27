@@ -1,6 +1,5 @@
 import sqlite3
 from crawler import Crawler, start_triggers
-import copy
 
 
 class ManagerDatabase:
@@ -132,7 +131,7 @@ class ManagerDatabase:
                                  'AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in primitive_filter.items()))).fetchall())
 
     def new_primitive_row(self, primitive_infos, primitive_name): # todo: esse parâmetro primitive_name foge dos padrões, pois precisa ser o "primitive_##name"
-        primitive_infos = {k: '"' + str(v) + '"' for k, v in primitive_infos.items()}
+        primitive_infos = {k: "'{}'".format(str(v).replace("'", "''")) for k, v in primitive_infos.items()}
         self.execute('INSERT INTO ' + primitive_name + ' (' + ','.join(primitive_infos.keys()) + ') VALUES (' + ','.join(primitive_infos.values()) + ')')
         self.execute('INSERT INTO ' + primitive_name + '_crawler (id) VALUES (?)', (self.lastrowid(),))
 
@@ -188,104 +187,75 @@ class ManagerDatabase:
         return [k for k, v in self.crawler_list_status(primitive_id, primitive_name).items() if v == 1]
 
     def get_primitive_row_info_all(self, primitive_id, primitive_name):
-        # Recolher infos da tabela principal dele
-        primitive_table = self.select_column_and_value(
-            "SELECT * FROM primitive_" + primitive_name + " WHERE id=?", (primitive_id,), discard=['id']
-        )
-        fieldnames = copy.copy(primitive_table)
-
-        # Recolher infos da tabela dos crawlers
-        crawler_required = list(self.crawler_list_status(primitive_id, primitive_name).keys())
         crawler_list_success = self.crawler_list_success(primitive_id, primitive_name)
-        for cls in Crawler.__subclasses__():
-            # Verificar se essa primitiva usa esse crawler, para, se não usar, ignora-lo
-            if cls.name() not in crawler_required:
-                continue
+        crawler_list_success_cls = [i for i in Crawler.__subclasses__() if i.name() in crawler_list_success]
 
-            # Tabela principal
-            dict_infos = self.select_column_and_value(
-                "SELECT * FROM %s WHERE %s=?" % (cls.name(), 'primitive_' + primitive_name + '_id'), (primitive_id,),
-                discard=['primitive_' + primitive_name + '_id']
-            )
-            dict_infos = {k: v for k, v in dict_infos.items() if not(k in fieldnames and v is None)}
-            fieldnames.update(dict_infos)
+        ###
+        # Recolher infos da tabela da primitive e da tabela principal dos crawlers
+        fieldnames = self.select_column_and_value(
+            'SELECT * FROM primitive_{} '.format(primitive_name) +
+            ' '.join([
+                'INNER JOIN {} ON {}.primitive_{}_id == {}'.format(i, i, primitive_name, primitive_id)
+                for i in crawler_list_success
+            ]) +
+            ' WHERE primitive_{}.id == {}'.format(primitive_name, primitive_id),
+            discard=['id', 'primitive_{}_id'.format(primitive_name)]
+        )
 
-            # Tabelas secundárias
-            if cls.name() in crawler_list_success:
-                # Adicionar valores das tabelas secundárias à variável "dict_infos"
-                for current in cls.read_my_secondary_tables():
-                    table = current['table']
+        ###
+        # Recolher infos das tabelas secundárias dos crawlers que obtiveram sucesso
+        def add_referenced_value(origin, to_add):
+            if current_rule['table'] not in origin:
+                origin[current_rule['table']] = []
 
-                    if 'reference' not in current.keys():
-                        # ler tabela não referenciada
-                        rows = self.select_column_and_value_many(
-                            "SELECT * FROM %s WHERE %s=?" % (cls.name() + '_' + table, 'primitive_' + primitive_name + '_id'), (primitive_id,),
-                            discard=['primitive_' + primitive_name + '_id']
-                        )
+            origin[current_rule['table']].append(to_add)
 
-                        # no caso de colunas para referencia, precisamos que seja um dicionário,
-                        # para posteriormente adicionar os valores das tabelas referenciadas
-                        for current_row in rows:
-                            if 'reference' in current_row.keys():
-                                current_row['reference'] = {'reference_number': current_row['reference']}
+        def get_deep_fieldnames():
+            # essa função irá listar os itens que servem de referência de acordo com o current_rule
+            deep = fieldnames[cls.name() + '_' + current_rule['reference'][0]]
 
-                        # atalizar dict_infos
-                        dict_infos.update({table: rows})
-                    else:
-                        # ler a tabela referenciada; substitui o id da coluna de referência para o seu respectivo conteúdo no banco
-                        reference_table = current['reference']
-                        if type(reference_table) == tuple:
-                            inter = eval( # código para criar array com as colunas a serem acessadas e modificadas com o conteúdo da referência
-                                '[' +\
-                                    "{}['reference'][reference_table[-1]] ".format(chr(ord('i') + len(reference_table) - 2)) +\
-                                    'for i in dict_infos[reference_table[0]] ' +\
-                                    ' '.join(
-                                        [
-                                            "for {} in {}['reference'][reference_table[{}]]".format(
-                                                chr(ord('i') + i), chr(ord('i') + i - 1), i
-                                            )
-                                            for i in range(1, len(reference_table) - 1)
-                                        ]
-                                    ) +\
-                                ']',
-                                {'reference_table': reference_table, 'dict_infos': dict_infos}
-                            )
-                            inter = [j for i in inter for j in i]
-                            reference_table = reference_table[-1]
-                        else:
-                            inter = dict_infos[reference_table]
+            for deeping in current_rule['reference'][1:]:
+                deep = [t[deeping] for t in deep if deeping in t]
+                deep = [tt for t in deep for tt in t]
 
-                        for i in inter:
-                            referenceid = i['reference']['reference_number']
-                            rows = self.select_column_and_value_many(
-                                "SELECT * FROM %s WHERE %s=?" % (cls.name() + '_' + table, 'reference_' + reference_table), (referenceid,),
-                                discard=['primitive_' + primitive_name + '_id', 'reference_' + reference_table]
-                            )
+            return deep
 
-                            # pode ser que uma tabela referenciada referencie outra tabela
-                            # então precisamos tomar o mesmo cuidado que foi feito com as tabelas não referenciada
-                            for current_row in rows:
-                                if 'reference' in current_row.keys():
-                                    current_row['reference'] = {'reference_number': current_row['reference']}
+        for cls in crawler_list_success_cls:
+            # Percorrer lista com as regras de leitura das tabelas secundárias
+            for current_rule in cls.read_my_secondary_tables():
+                current_table_name = current_rule['table']
+                current_table_name_full = cls.name() + '_' + current_table_name
 
-                            i['reference'][table] = rows
+                # recolher infos da tabela
+                infos = self.select_column_and_value_many(
+                    'SELECT * FROM {} WHERE {}.primitive_{}_id == {}'.format(
+                        current_table_name_full, current_table_name_full, primitive_name, primitive_id
+                    )
+                )
 
-                # Em "dict_infos", apagar key temporária "reference_number" (ela é necessária para ligar tabela referenciada e nada mais além após isso)
-                for k, v in dict_infos.items():
-                    if type(v) is not list:
-                        continue
+                if 'reference' not in current_rule:
+                    # se a tabela não é referenciada, adicionar os seus dados à raiz de fieldnames
 
-                    for i in v:
-                        if 'reference' in i:
-                            del i['reference']['reference_number']
+                    fieldnames[current_table_name_full] = infos
+                else:
+                    # se a tabela for referenciada, precisamos adicionar seu valores em sua respectiva referência
 
-                # Adicionar colunas exportadas
-                for current in cls.column_export():
-                    fieldnames[current['column_name']] = current['how'](dict(dict_infos, **primitive_table))
-            else:
-                for current in cls.column_export():
-                    fieldnames[current['column_name']] = None
+                    [
+                        add_referenced_value(a, b)
 
+                        for a in get_deep_fieldnames()
+                        for b in infos
+
+                        if a['reference'] == b['reference_' + current_rule['reference'][-1]]
+                    ]
+
+        ###
+        # Chamar método column_export dos crawlers que obtiveram sucesso
+        for cls in crawler_list_success_cls:
+            for i in cls.column_export():
+                fieldnames[i['column_name']] = i['how'](fieldnames)
+
+        ###
         # Recolher infos da tabela main_arbitrary
         def get_value_typed(j):
             if j['column_set_integer'] and j['column_value'] is not None:
@@ -296,15 +266,27 @@ class ManagerDatabase:
         fieldnames.update(
             {
                 i['column_name']: get_value_typed(i) for i in
-                self.select_column_and_value_many("SELECT * FROM main_arbitrary WHERE primitive_id=? and primitive_name=?", (primitive_id, primitive_name), discard=['peopleid'])
+                self.select_column_and_value_many('SELECT * FROM main_arbitrary WHERE primitive_id=? and primitive_name=?', (primitive_id, primitive_name))
             }
         )
 
+        ###
         # Recolher infos da tabela main_linker
-        for i in self.select_column_and_value_many("SELECT second_id, second_name FROM main_linker_primitives WHERE first_id=? and first_name=?", (primitive_id, primitive_name)):
-            fieldnames[i['second_name']] = self.get_primitive_row_info_all(i['second_id'], i['second_name'])
+        # todo: precisa melhor implementado e testado isso
+        #for i in self.select_column_and_value_many('SELECT second_id, second_name FROM main_linker_primitives WHERE first_id=? and first_name=?', (primitive_id, primitive_name)):
+        #    fieldnames[i['second_name']] = self.get_primitive_row_info_all(i['second_id'], i['second_name'])
 
-        #
+        ###
+        # Recolher dados em que a primitive foi referenciada por outras
+        # todo: precisa ser feito isso ainda
+        # para isso, talvez eu precise criar uma tabela para fazer esse trabalho
+        # sempre que uma linha for se referir a uma primitive, precisará escrever nessa tabela
+        # ela terá as colunas "id", "nome da tabela em que foi referenciada", "nome da coluna em que a primitive id foi referenciada"
+
+        ###
+        # Apagar valores, agora desnecessários, no fieldnames, tais como reference
+        # todo
+
         return fieldnames
 
     # Retorna um dicionário com os dados requeridos em "dependencies", porém,
@@ -327,57 +309,3 @@ class ManagerDatabase:
 
         return self.execute("SELECT * FROM " + primitive_name + " WHERE %s" %
                             ' AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in primitive_filter.items())).fetchone()[0]
-
-    def get_primitive_row_with_criteria(self, primitive_name, want=[], crawler_need=None, crawler_exclude=None, restriction=None):
-        to_return = []
-
-        for current_primitive_row in self.execute('SELECT id FROM primitive_' + primitive_name).fetchall():
-            current_id = current_primitive_row[0]
-
-            if crawler_need is not None:
-                list_crawler = self.crawler_list_status(current_id, primitive_name)
-                pass_this_people = False
-                for i in crawler_need:
-                    if list_crawler[i] != 1:
-                        pass_this_people = True
-                        break
-                if pass_this_people:
-                    continue
-
-            if crawler_exclude is not None:
-                list_crawler = self.crawler_list_status(current_id, primitive_name)
-                pass_this_people = False
-                for i in crawler_exclude:
-                    if list_crawler[i] == 1:
-                        pass_this_people = True
-                        break
-                if pass_this_people:
-                    continue
-
-            # todo: resolver caso esteja comparando um valor numérico com uma coluna cujo valor é None
-            if restriction is not None:
-                dep = self.get_dependencies(current_id, primitive_name, *restriction.keys())
-                pass_this_people = False
-                for k, v in dep.items():
-                    if str(v).replace('.', '', 1).isdigit():
-                        if not eval(str(v) + ' ' + restriction[k]):
-                            pass_this_people = True
-                            break
-                    elif str(v) == 'None':
-                        if not eval(str(v) + ' ' + restriction[k]):
-                            pass_this_people = True
-                            break
-                    else:
-                        if not eval('"' + str(v) + '" ' + restriction[k]):
-                            pass_this_people = True
-                            break
-                if pass_this_people:
-                    continue
-
-            my_dict = {'id': current_id}
-            if len(want):
-                my_dict.update({k: v for k, v in self.get_primitive_row_info_all(current_id, primitive_name).items() if k in want})
-
-            to_return.append(my_dict)
-
-        return to_return

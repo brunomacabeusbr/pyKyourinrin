@@ -95,8 +95,6 @@ def write_tables_secondary():
     def add_key_reference(from_table):
         if from_table not in reference_list.keys():
             return ''
-        elif reference_list[from_table] not in reference_list:
-            return ", 'reference': '{}'".format(reference_list[from_table])
         else:
             predecessor_reference = []
             def make_predecessor_reference(info):
@@ -120,7 +118,7 @@ def write_tables_secondary():
     return to_return
 
 def write_column_export():
-    if len(tables_secondary) == 0:
+    if len(column_export) == 0:
         return ''
 
     to_return = '\n    @staticmethod\n    def column_export():\n'
@@ -132,7 +130,7 @@ def write_column_export():
     # write return
     to_return += '        return (\n'
     to_return += inter_to_tuple_multi_line(["{'column_name': '" + i + "', 'how': " + i + "}" for i in column_export], 3)
-    to_return += '\n        )'
+    to_return += '\n        )\n'
 
     #
     return to_return

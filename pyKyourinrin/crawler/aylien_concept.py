@@ -35,24 +35,8 @@ class CrawlerAylienConcept(Crawler):
     def read_my_secondary_tables():
         return (
             {'table': 'mentioned'},
-            {'table': 'mentioned_types', 'reference': 'mentioned'},
-            {'table': 'mentioned_surface_article', 'reference': 'mentioned'}
-        )
-
-    @staticmethod
-    def column_export():
-        def concepts(read):
-            if len(read['mentioned']) > 0:
-                for i in read['mentioned']:
-                    i['mentioned_surface_article'] = i['reference']['mentioned_surface_article']
-                    i['mentioned_types'] = i['reference']['mentioned_types']
-                    del i['reference']
-                return read['mentioned']
-            else:
-                return None
-
-        return (
-            {'column_name': 'concepts', 'how': concepts},
+            {'table': 'mentioned_types', 'reference': ('mentioned',)},
+            {'table': 'mentioned_surface_article', 'reference': ('mentioned',)}
         )
 
     @staticmethod

@@ -23,18 +23,6 @@ class CrawlerQSelecao(Crawler):
         )
 
     @staticmethod
-    def column_export():
-        def lister_public_tender(read):
-            if len(read['public_tender']) > 0:
-                return read['public_tender']
-            else:
-                return None
-
-        return (
-            {'column_name': 'ifce_public_tender', 'how': lister_public_tender},
-        )
-
-    @staticmethod
     def name():
         return 'qselecao'
 

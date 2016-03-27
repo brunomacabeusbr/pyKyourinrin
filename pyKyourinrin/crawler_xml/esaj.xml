@@ -222,7 +222,8 @@
         </table_secondary>
 
         <column_export>
-            <name>todo</name>
+            <name>aliados_juridicos</name>
+            <name>processos</name>
         </column_export>
     </database>
 

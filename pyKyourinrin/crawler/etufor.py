@@ -31,20 +31,13 @@ class CrawlerEtufor(Crawler):
     @staticmethod
     def column_export():
         def last_school_name(read):
-            if len(read['records_school']) > 0:
-                return read['records_school'][-1]['school']
-            else:
-                return None
-
-        def record_registered_school(read):
-            if len(read['records_school']) > 0:
-                return read['records_school']
+            if len(read['etufor_records_school']) > 0:
+                return read['etufor_records_school'][-1]['school']
             else:
                 return None
 
         return (
             {'column_name': 'last_school_name', 'how': last_school_name},
-            {'column_name': 'record_registered_school', 'how': record_registered_school},
         )
 
     @staticmethod

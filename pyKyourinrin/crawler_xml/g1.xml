@@ -19,10 +19,6 @@
                 <type>TEXT</type>
             </column>
         </table_secondary>
-
-        <column_export>
-            <name>tags_list</name>
-        </column_export>
     </database>
 
     <dependencies>
