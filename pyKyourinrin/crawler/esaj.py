@@ -117,7 +117,7 @@ class CrawlerEsaj(Crawler):
         )
 
     @staticmethod
-    def column_export():
+    def macro_at_data():
         def aliados_juridicos(read):
             added = []
             to_return = []

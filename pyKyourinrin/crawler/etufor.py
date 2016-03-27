@@ -29,7 +29,7 @@ class CrawlerEtufor(Crawler):
         )
 
     @staticmethod
-    def column_export():
+    def macro_at_data():
         def last_school_name(read):
             if len(read['etufor_records_school']) > 0:
                 return read['etufor_records_school'][-1]['school']

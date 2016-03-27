@@ -16,9 +16,9 @@
             </column>
         </table_secondary>
 
-        <column_export>
+        <macro_at_data>
             <name>key_sentences</name>
-        </column_export>
+        </macro_at_data>
     </database>
 
     <dependencies>

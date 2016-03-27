@@ -221,10 +221,10 @@
             </column>
         </table_secondary>
 
-        <column_export>
+        <macro_at_data>
             <name>aliados_juridicos</name>
             <name>processos</name>
-        </column_export>
+        </macro_at_data>
     </database>
 
     <dependencies>

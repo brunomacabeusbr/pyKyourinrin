@@ -56,10 +56,10 @@
             </column>
         </table_secondary>
 
-        <column_export>
+        <macro_at_data>
             <name>salary_average</name>
             <name>job</name>
-        </column_export>
+        </macro_at_data>
     </database>
 
     <dependencies>

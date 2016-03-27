@@ -35,9 +35,9 @@
             </column>
         </table_secondary>
 
-        <column_export>
+        <macro_at_data>
             <name>last_school_name</name>
-        </column_export>
+        </macro_at_data>
     </database>
 
     <dependencies>

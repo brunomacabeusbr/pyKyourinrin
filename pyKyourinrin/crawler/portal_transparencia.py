@@ -1,8 +1,4 @@
 from . import Crawler
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from collections import defaultdict
-import re
 
 
 class CrawlerPortalTransparencia(Crawler):
@@ -44,7 +40,7 @@ class CrawlerPortalTransparencia(Crawler):
         )
 
     @staticmethod
-    def column_export():
+    def macro_at_data():
         def salary_average(read):
             salary_total = 0
             for i in read['portal_transparencia_remuneration_date']:

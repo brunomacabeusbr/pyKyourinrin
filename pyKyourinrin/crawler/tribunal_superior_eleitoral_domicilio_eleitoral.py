@@ -18,7 +18,7 @@ class CrawlerTribunalSuperiorEleitoralDomicilioEleitoral(Crawler):
                         ');' % self.name())
 
     @staticmethod
-    def column_export():
+    def macro_at_data():
         def domicilio_eleitoral(read):
             return 'Estado: {}; Cidade: {}; Endereço: {}; Local: {}; Zona: {}; Seção: {}'.format(
                 read['domicilio_eleitoral_state'],

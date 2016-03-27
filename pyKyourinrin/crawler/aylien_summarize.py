@@ -20,7 +20,7 @@ class CrawlerAylienSummarize(Crawler):
         )
 
     @staticmethod
-    def column_export():
+    def macro_at_data():
         def key_sentences(read):
             if len(read['sentences']) > 0:
                 return read['sentences']

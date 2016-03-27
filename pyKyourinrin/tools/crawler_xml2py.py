@@ -21,10 +21,10 @@ tables_secondary = OrderedDict(
     for k in xml_root.find('database').findall('table_secondary')
 )
 reference_list = {i.find('name').text: i.find('reference').text for i in xml_root.find('database').findall('table_secondary') if i.find('reference') is not None}
-column_export_root = xml_root.find('database').find('column_export')
-column_export = []
-if column_export_root:
-    column_export = [i.text for i in column_export_root.findall('name')]
+macro_at_data_root = xml_root.find('database').find('macro_at_data')
+macro_at_data = []
+if macro_at_data_root:
+    macro_at_data = [i.text for i in macro_at_data_root.findall('name')]
 dependencies = [[i2.text for i2 in i.findall('dependence')] for i in xml_root.find('dependencies').findall('route')]
 crop =\
     [i.text for i in xml_root.find('crop').findall('info') if 'primitive' not in i.attrib] +\
@@ -63,7 +63,7 @@ for i in tables_secondary.values():
         check_black_list(i2[0], black_list_name_column)
         check_white_list(i2[1], white_list_type_column)
 
-for i in column_export:
+for i in macro_at_data:
     check_black_list(i, black_list_name_column)
 
 # Write py
@@ -117,19 +117,19 @@ def write_tables_secondary():
     # return
     return to_return
 
-def write_column_export():
-    if len(column_export) == 0:
+def write_macro_at_data():
+    if len(macro_at_data) == 0:
         return ''
 
-    to_return = '\n    @staticmethod\n    def column_export():\n'
+    to_return = '\n    @staticmethod\n    def macro_at_data():\n'
 
     # functions
-    for i in column_export:
+    for i in macro_at_data:
         to_return += '        def {}(read):\n            pass # todo\n\n'.format(i)
 
     # write return
     to_return += '        return (\n'
-    to_return += inter_to_tuple_multi_line(["{'column_name': '" + i + "', 'how': " + i + "}" for i in column_export], 3)
+    to_return += inter_to_tuple_multi_line(["{'column_name': '" + i + "', 'how': " + i + "}" for i in macro_at_data], 3)
     to_return += '\n        )\n'
 
     #
@@ -185,7 +185,7 @@ class Crawler""" + crawler_name_camel_case + """(Crawler):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
 """ + columns_of_table(table_main_columns) + """'
                         ');' % self.name())""" + write_tables_secondary() + """
-""" + write_column_export() + """
+""" + write_macro_at_data() + """
     @staticmethod
     def name():
         return '""" + xml_name + """'

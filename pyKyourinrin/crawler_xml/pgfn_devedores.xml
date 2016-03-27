@@ -25,9 +25,9 @@
             </column>
         </table_secondary>
 
-        <column_export>
+        <macro_at_data>
             <name>pgfn_debt_total</name>
-        </column_export>
+        </macro_at_data>
     </database>
 
     <dependencies>

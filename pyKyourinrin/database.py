@@ -250,9 +250,9 @@ class ManagerDatabase:
                     ]
 
         ###
-        # Chamar método column_export dos crawlers que obtiveram sucesso
+        # Chamar método macro_at_data dos crawlers que obtiveram sucesso
         for cls in crawler_list_success_cls:
-            for i in cls.column_export():
+            for i in cls.macro_at_data():
                 fieldnames[i['column_name']] = i['how'](fieldnames)
 
         ###

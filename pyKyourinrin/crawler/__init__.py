@@ -17,7 +17,7 @@ class Crawler:
         return ()
 
     @staticmethod
-    def column_export():
+    def macro_at_data():
         return ()
 
     @classmethod
