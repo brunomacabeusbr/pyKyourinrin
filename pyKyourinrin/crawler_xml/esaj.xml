@@ -50,7 +50,7 @@
             </column>
             <column>
                 <name>juiz</name>
-                <type>TEXT</type>
+                <type primitive="">peoples</type>
             </column>
             <column>
                 <name>valor_acao</name>
@@ -79,7 +79,7 @@
             </column>
             <column>
                 <name>parte_name</name>
-                <type>TEXT</type>
+                <type>TEXT</type> <!-- todo: o ideal seria que aqui fosse uma referência para primitive id de peoples ou então de empresa; pode ser um ou outro -->
             </column>
         </table_secondary>
 
@@ -92,7 +92,7 @@
             </column>
             <column>
                 <name>justiciario_name</name>
-                <type>TEXT</type>
+                <type primitive="">peoples</type>
             </column>
         </table_secondary>
 

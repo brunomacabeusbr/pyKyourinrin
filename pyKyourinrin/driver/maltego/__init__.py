@@ -53,14 +53,19 @@ def execute_crawler():
 
 
 def get_info_all():
-    infos = db.get_primitive_row_info_all(int(args['table_id']), args['primitive_name'])
+    infos = db.get_primitive_row_info(int(args['table_id']), args['primitive_name'])
 
     mm = lib_files.MaltegoMessage()
     for k, v in infos.items():
         if v is None:
             continue
 
-        if type(v) is list:
+        if k[:9] == 'primitive':
+            primitive_name = k.split('_', 3)
+            x = mm.add_entity('pykyourinrin.' + primitive_name, value='{}: {} id {}'.format(primitive_name[-1]. primitive_name[1], v))
+            x.add_additional_fields('table_id', v)
+            x.add_additional_fields('primitive_name', primitive_name[1])
+        elif type(v) is list:
             x = mm.add_entity('pykyourinrin.info_list', value='{} from {} {}: {} sub-itens'.format(k, args['primitive_name'], args['table_id'], len(v)))
             x.add_additional_fields('dict_path', "['" + k + "']")
         else:
@@ -72,7 +77,7 @@ def get_info_all():
 
 
 def unpack_list():
-    infos = db.get_primitive_row_info_all(int(args['from_primitive_id']), args['from_primitive_name'])
+    infos = db.get_primitive_row_info(int(args['from_primitive_id']), args['from_primitive_name'])
     infos = eval('infos' + args['dict_path'])
 
     mm = lib_files.MaltegoMessage()
@@ -85,11 +90,20 @@ def unpack_list():
             x.add_additional_fields('from_primitive_name', args['from_primitive_name'])
     else:
         for k, v in infos.items():
+            if v is None:
+                continue
+
             if type(v) is list:
                 x = mm.add_entity('pykyourinrin.info_list', value='{} from {} by {} {}'.format(k, args['dict_path'], args['from_primitive_name'], args['from_primitive_id']))
                 x.add_additional_fields('dict_path', args['dict_path'] + "['" + k + "']")
             else:
-                x = mm.add_entity('pykyourinrin.info', value='{}: {}'.format(k, v))
+                if k[:9] == 'primitive':
+                    primitive_name = k.split('_', 3)
+                    x = mm.add_entity('pykyourinrin.' + primitive_name[1], value='{}: {} id {}'.format(primitive_name[-1], primitive_name[1], v))
+                    x.add_additional_fields('table_id', v)
+                    x.add_additional_fields('primitive_name', primitive_name[1])
+                else:
+                    x = mm.add_entity('pykyourinrin.info', value='{}: {}'.format(k, v))
 
             x.add_additional_fields('from_primitive_id', args['from_primitive_id'])
             x.add_additional_fields('from_primitive_name', args['from_primitive_name'])
@@ -214,18 +228,18 @@ def parse_arguments(argv):
 if sys.argv[1] == 'generate_files':
     generate_files()
 else:
-    args = parse_arguments(sys.argv[-1])
-
     if DEBUG:
         # coloque True caso queira debugar e ver a mensagem
         mm = lib_files.MaltegoMessage()
-        x = mm.add_entity('pykyourinrin.info', value='#'.join(['{}={}'.format(k, v) for k, v in args.items()]))
+        mm.add_entity('pykyourinrin.info_list', value=' '.join(sys.argv[1:]))
+        mm.add_entity('pykyourinrin.info', value='#'.join(['{}={}'.format(k, v) for k, v in parse_arguments(sys.argv[-1]).items()]))
         mm.show()
         exit()
 
     from pyKyourinrin.database import ManagerDatabase
     db = ManagerDatabase(trigger=False)
 
+    args = None
     if sys.argv[1] == 'execute_crawler':
         args = parse_arguments(sys.argv[-1])
         execute_crawler()

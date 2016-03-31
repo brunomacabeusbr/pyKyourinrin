@@ -15,9 +15,10 @@ xml_root = ET.parse(xml_file).getroot()
 
 primitives = [i.text for i in xml_root.find('primitive_required').findall('primitive')]
 primitives_harvest = [i.text for i in xml_root.find('primitive_required').findall('primitive') if 'harvest_param' in i.attrib]
-table_main_columns = [(i.find('name').text, i.find('type').text) for i in xml_root.find('database').find('table_main').findall('column')]
+primitives_tables_indexed = [i.text for i in xml_root.find('primitive_required').findall('primitive') if 'not_indexed_tables' not in i.attrib]
+table_main_columns = [(i.find('name').text, i.find('type')) for i in xml_root.find('database').find('table_main').findall('column')]
 tables_secondary = OrderedDict(
-    (k.find('name').text, [(i.find('name').text, i.find('type').text) for i in k.findall('column')])
+    (k.find('name').text, [(i.find('name').text, i.find('type')) for i in k.findall('column')])
     for k in xml_root.find('database').findall('table_secondary')
 )
 reference_list = {i.find('name').text: i.find('reference').text for i in xml_root.find('database').findall('table_secondary') if i.find('reference') is not None}
@@ -56,12 +57,14 @@ check_black_list(xml_name, black_list_name_crawler)
 
 for i in table_main_columns:
     check_black_list(i[0], black_list_name_column)
-    check_white_list(i[1], white_list_type_column)
+    if 'primitive' not in i[1].attrib:
+        check_white_list(i[1].text, white_list_type_column)
 
 for i in tables_secondary.values():
     for i2 in i:
         check_black_list(i2[0], black_list_name_column)
-        check_white_list(i2[1], white_list_type_column)
+        if 'primitive' not in i2[1].attrib:
+            check_white_list(i2[1].text, white_list_type_column)
 
 for i in macro_at_data:
     check_black_list(i, black_list_name_column)
@@ -70,7 +73,40 @@ for i in macro_at_data:
 crawler_name_camel_case = ''.join(i.title() for i in xml_name.split('_'))
 
 def columns_of_table(list_columns):
-    return ",'\n".join("                            '" + i[0] + ' ' + i[1] for i in [('primitive_' + i2 + '_id', 'INTEGER') for i2 in primitives] + list_columns)
+    list_column_name_and_type = []
+    list_foreigns = []
+
+    for i in list_columns:
+        if type(i[1]) == str:
+            list_column_name_and_type.append(
+                (i[0],
+                 i[1])
+            )
+            continue
+
+        if 'primitive' in i[1].attrib:
+            column_name = 'primitive_{}_id_{}'.format(i[1].text, i[0])
+
+            list_column_name_and_type.append(
+                (
+                    column_name,
+                    'INTEGER'
+                )
+            )
+
+            list_foreigns.append(('FOREIGN KEY({})'.format(column_name), 'REFERENCES primitive_{}(id)'.format(i[1].text)))
+        else:
+            list_column_name_and_type.append(
+                (
+                    i[0],
+                    i[1].text
+                )
+            )
+
+    return ",'\n".join(
+        "                            '" + i[0] + ' ' + i[1]
+        for i in [('primitive_' + i2 + '_id', 'INTEGER') for i2 in primitives_tables_indexed] + list_column_name_and_type + list_foreigns
+    )
 
 def write_tables_secondary():
     if len(tables_secondary) == 0:

@@ -1,5 +1,6 @@
 import sqlite3
 from crawler import Crawler, start_triggers
+import inspect
 
 
 class ManagerDatabase:
@@ -44,7 +45,7 @@ class ManagerDatabase:
         ]
 
         for cls in Crawler.__subclasses__():
-            primitive_required = cls.primitive_required()
+            primitive_required = [i for i in inspect.getargspec(cls.harvest_debug).args if i[:9] == 'primitive']
             for i in primitive_required:
                 if i not in tables_primitive_list:
                     raise ValueError('O crawler "{}" requer a primitiva desconhecida "{}"'.format(cls.name(), i))
@@ -62,15 +63,6 @@ class ManagerDatabase:
                         'column_name TEXT,'
                         'column_value TEXT,'
                         'column_set_integer INTEGER DEFAULT 0'
-                     ');')
-
-        # table main_linker_primitives: relacionar dois elementos de primitives diferentes
-        # todo: preciso limitar para um determinado par de "first_id" e "first_name" não possa repetir dois "second_name"
-        self.execute('CREATE TABLE IF NOT EXISTS main_linker_primitives('
-                        'first_id INTEGER,'
-                        'first_name TEXT,'
-                        'second_id INTEGER,'
-                        'second_name TEXT'
                      ');')
 
         # table main_trigger: usada para armazanar dados de configuração e temporização dos triggers
@@ -136,10 +128,10 @@ class ManagerDatabase:
         self.execute('INSERT INTO ' + primitive_name + '_crawler (id) VALUES (?)', (self.lastrowid(),))
 
     def update_primitive_row(self, column_and_value, primitive_filter=None, primitive_name=None):
-        if hasattr(Crawler, 'temp_current_primitive_name'):
+        if hasattr(Crawler, 'temp_current_primitive_name') and primitive_name is None:
             if primitive_filter is not None or primitive_name is not None:
-                raise ValueError('Não forneça o parâmetro "primitive_filter" nem "primitive_name",'
-                                 'pois esse crawler recebeu como parâmetro um id de primitive')
+                raise ValueError('Se não for usar o valor temporário, vindo da primitive_id passada no harvest,'
+                                 'use os parâmetros "primitive_filter" e "primitive_name"')
 
             primitive_name = Crawler.temp_current_primitive_name
             where_statement = ' WHERE id=' + str(Crawler.temp_current_primitive_id)
@@ -186,17 +178,18 @@ class ManagerDatabase:
     def crawler_list_success(self, primitive_id, primitive_name):
         return [k for k, v in self.crawler_list_status(primitive_id, primitive_name).items() if v == 1]
 
-    def get_primitive_row_info_all(self, primitive_id, primitive_name):
+    def get_primitive_row_info(self, primitive_id, primitive_name, get_tables_secondary=True):
         crawler_list_success = self.crawler_list_success(primitive_id, primitive_name)
         crawler_list_success_cls = [i for i in Crawler.__subclasses__() if i.name() in crawler_list_success]
+        crawler_list_success_cls = [i for i in crawler_list_success_cls if 'primitive_' + primitive_name in inspect.getargspec(i.harvest_debug).args]
 
         ###
         # Recolher infos da tabela da primitive e da tabela principal dos crawlers
         fieldnames = self.select_column_and_value(
             'SELECT * FROM primitive_{} '.format(primitive_name) +
             ' '.join([
-                'INNER JOIN {} ON {}.primitive_{}_id == {}'.format(i, i, primitive_name, primitive_id)
-                for i in crawler_list_success
+                'INNER JOIN {} ON {}.primitive_{}_id == {}'.format(i.name(), i.name(), primitive_name, primitive_id)
+                for i in crawler_list_success_cls
             ]) +
             ' WHERE primitive_{}.id == {}'.format(primitive_name, primitive_id),
             discard=['id', 'primitive_{}_id'.format(primitive_name)]
@@ -204,56 +197,64 @@ class ManagerDatabase:
 
         ###
         # Recolher infos das tabelas secundárias dos crawlers que obtiveram sucesso
-        def add_referenced_value(origin, to_add):
-            if current_rule['table'] not in origin:
-                origin[current_rule['table']] = []
+        if get_tables_secondary:
+            def add_referenced_value(origin, to_add):
+                if current_rule['table'] not in origin:
+                    origin[current_rule['table']] = []
 
-            origin[current_rule['table']].append(to_add)
+                origin[current_rule['table']].append(to_add)
 
-        def get_deep_fieldnames():
-            # essa função irá listar os itens que servem de referência de acordo com o current_rule
-            deep = fieldnames[cls.name() + '_' + current_rule['reference'][0]]
+            def get_deep_fieldnames():
+                # essa função irá listar os itens que servem de referência de acordo com o current_rule
+                deep = fieldnames[cls.name() + '_' + current_rule['reference'][0]]
 
-            for deeping in current_rule['reference'][1:]:
-                deep = [t[deeping] for t in deep if deeping in t]
-                deep = [tt for t in deep for tt in t]
+                for deeping in current_rule['reference'][1:]:
+                    deep = [t[deeping] for t in deep if deeping in t]
+                    deep = [tt for t in deep for tt in t]
 
-            return deep
+                return deep
 
-        for cls in crawler_list_success_cls:
-            # Percorrer lista com as regras de leitura das tabelas secundárias
-            for current_rule in cls.read_my_secondary_tables():
-                current_table_name = current_rule['table']
-                current_table_name_full = cls.name() + '_' + current_table_name
+            for cls in crawler_list_success_cls:
+                # Percorrer lista com as regras de leitura das tabelas secundárias
+                for current_rule in cls.read_my_secondary_tables():
+                    current_table_name = current_rule['table']
+                    current_table_name_full = cls.name() + '_' + current_table_name
 
-                # recolher infos da tabela
-                infos = self.select_column_and_value_many(
-                    'SELECT * FROM {} WHERE {}.primitive_{}_id == {}'.format(
-                        current_table_name_full, current_table_name_full, primitive_name, primitive_id
+                    # recolher infos da tabela
+                    infos = self.select_column_and_value_many(
+                        'SELECT * FROM {} WHERE {}.primitive_{}_id == {}'.format(
+                            current_table_name_full, current_table_name_full, primitive_name, primitive_id
+                        )
                     )
-                )
 
-                if 'reference' not in current_rule:
-                    # se a tabela não é referenciada, adicionar os seus dados à raiz de fieldnames
+                    if 'reference' not in current_rule:
+                        # se a tabela não é referenciada, adicionar os seus dados à raiz de fieldnames
 
-                    fieldnames[current_table_name_full] = infos
-                else:
-                    # se a tabela for referenciada, precisamos adicionar seu valores em sua respectiva referência
+                        fieldnames[current_table_name_full] = infos
+                    else:
+                        # se a tabela for referenciada, precisamos adicionar seu valores em sua respectiva referência
 
-                    [
-                        add_referenced_value(a, b)
+                        [
+                            add_referenced_value(a, b)
 
-                        for a in get_deep_fieldnames()
-                        for b in infos
+                            for a in get_deep_fieldnames()
+                            for b in infos
 
-                        if a['reference'] == b['reference_' + current_rule['reference'][-1]]
-                    ]
+                            if a['reference'] == b['reference_' + current_rule['reference'][-1]]
+                        ]
+
+            ###
+            # Chamar método macro_at_data dos crawlers que obtiveram sucesso
+            for cls in crawler_list_success_cls:
+                for i in cls.macro_at_data():
+                    fieldnames[i['column_name']] = i['how'](fieldnames)
 
         ###
-        # Chamar método macro_at_data dos crawlers que obtiveram sucesso
-        for cls in crawler_list_success_cls:
-            for i in cls.macro_at_data():
-                fieldnames[i['column_name']] = i['how'](fieldnames)
+        # Listar primitives que referenciam para min
+        # todo: precisa ser feito isso ainda
+        # para isso, talvez eu precise criar uma tabela para fazer esse trabalho
+        # sempre que uma linha for se referir a uma primitive, precisará escrever nessa tabela
+        # ela terá as colunas "id", "nome da tabela em que foi referenciada", "nome da coluna em que a primitive id foi referenciada"
 
         ###
         # Recolher infos da tabela main_arbitrary
@@ -271,19 +272,6 @@ class ManagerDatabase:
         )
 
         ###
-        # Recolher infos da tabela main_linker
-        # todo: precisa melhor implementado e testado isso
-        #for i in self.select_column_and_value_many('SELECT second_id, second_name FROM main_linker_primitives WHERE first_id=? and first_name=?', (primitive_id, primitive_name)):
-        #    fieldnames[i['second_name']] = self.get_primitive_row_info_all(i['second_id'], i['second_name'])
-
-        ###
-        # Recolher dados em que a primitive foi referenciada por outras
-        # todo: precisa ser feito isso ainda
-        # para isso, talvez eu precise criar uma tabela para fazer esse trabalho
-        # sempre que uma linha for se referir a uma primitive, precisará escrever nessa tabela
-        # ela terá as colunas "id", "nome da tabela em que foi referenciada", "nome da coluna em que a primitive id foi referenciada"
-
-        ###
         # Apagar valores, agora desnecessários, no fieldnames, tais como reference
         # todo
 
@@ -292,7 +280,7 @@ class ManagerDatabase:
     # Retorna um dicionário com os dados requeridos em "dependencies", porém,
     # se algum dos dados requeridos em "dependencies" não for pertecente à primitiva, retornará apenas False
     def get_dependencies(self, primitive_id, primitive_name, *dependencies):
-        infos = self.get_primitive_row_info_all(primitive_id, primitive_name)
+        infos = self.get_primitive_row_info(primitive_id, primitive_name)
         infos_keys = list(infos.keys())
 
         if len([i for i in dependencies if i not in infos_keys]) > 0:

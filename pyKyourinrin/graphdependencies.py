@@ -165,7 +165,7 @@ class GraphDependenciesOfPrimitiveRow:
 
         ###
         # marcar nodes com dados já obtidos
-        infos = self.db.get_primitive_row_info_all(self.primitive_id, self.primitive_name)
+        infos = self.db.get_primitive_row_info(self.primitive_id, self.primitive_name)
         for k, v in infos.items():
             if k not in self.gd.node:
                 continue
@@ -205,7 +205,7 @@ class GraphDependenciesOfPrimitiveRow:
         import matplotlib.patches as mpatches
         plt.legend(
             handles=[
-                mpatches.Patch(color=i.my_color, label=(i.name(), i.name() + ' ✓', i.name() + ' ×')[crawler_list_status[i.name()]])
+                mpatches.Patch(color=i.my_color, label=(i.name(), i.name() + ' (OK)', i.name() + ' (FAIL)')[crawler_list_status[i.name()]])
                 for i in self.list_crawler
             ]
         )

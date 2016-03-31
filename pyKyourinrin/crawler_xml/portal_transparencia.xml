@@ -1,6 +1,7 @@
 <crawler>
     <primitive_required>
         <primitive harvest_param="">peoples</primitive>
+        <primitive not_indexed_tables="">firm</primitive>
     </primitive_required>
 
     <database>
@@ -23,7 +24,7 @@
             </column>
             <column>
                 <name>workplace</name>
-                <type>TEXT</type>
+                <type primitive="">firm</type>
             </column>
             <column>
                 <name>working_hours</name>

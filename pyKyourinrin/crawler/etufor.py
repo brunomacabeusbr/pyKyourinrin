@@ -16,10 +16,10 @@ class CrawlerEtufor(Crawler):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
                             'primitive_peoples_id INTEGER,'
                             'timestamp TEXT,'
-                            'school TEXT,'
-                            'type TEXT,'
+                            'primitive_firm_id_school INTEGER,'
                             'course TEXT,'
-                            'turn TEXT'
+                            'turn TEXT,'
+                            'FOREIGN KEY(primitive_firm_id_school) REFERENCES primitive_firm(id)'
                         ');' % (self.name() + '_records_school'))
 
     @staticmethod
@@ -32,7 +32,9 @@ class CrawlerEtufor(Crawler):
     def macro_at_data():
         def last_school_name(read):
             if len(read['etufor_records_school']) > 0:
-                return read['etufor_records_school'][-1]['school']
+                return Crawler.db.get_primitive_row_info(
+                    read['etufor_records_school'][-1]['primitive_firm_id_school'],
+                    'firm', get_tables_secondary=False)['nome_fantasia']
             else:
                 return None
 
@@ -54,7 +56,7 @@ class CrawlerEtufor(Crawler):
 
     @staticmethod
     def primitive_required():
-        return 'primitive_peoples',
+        return 'primitive_peoples', 'primitive_firm'
 
     @classmethod
     def harvest(cls, primitive_peoples=None, dependencies=None):
@@ -115,5 +117,11 @@ class CrawlerEtufor(Crawler):
                 regexp_timestamp.search(timestamp).groups()
             timestamp_iso = str(datetime.datetime(int(timestamp_year), int(timestamp_month), int(timestamp_day), int(timestamp_hour), int(timestamp_minute), int(timestamp_second)))
 
-            cls.update_my_table({'timestamp': timestamp_iso, 'school': school, 'type': school_type, 'course': course, 'turn': turn}, table='records_school')
+            cls.update_my_table(
+                {
+                    'timestamp': timestamp_iso,
+                    'primitive_firm_id_school': cls.db.update_primitive_row({'administration': school_type}, primitive_filter={'nome_fantasia': school}, primitive_name='primitive_firm'),
+                    'course': course,
+                    'turn': turn
+                }, table='records_school')
             pos += 10

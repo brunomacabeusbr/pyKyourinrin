@@ -1,4 +1,7 @@
 from . import Crawler
+from selenium import webdriver
+from collections import defaultdict
+import re
 
 
 class CrawlerPortalTransparencia(Crawler):
@@ -12,8 +15,9 @@ class CrawlerPortalTransparencia(Crawler):
                             'primitive_peoples_id INTEGER,'
                             'type_contract TEXT,'
                             'job TEXT,'
-                            'workplace TEXT,'
-                            'working_hours TEXT'
+                            'primitive_firm_id_workplace INTEGER,'
+                            'working_hours TEXT,'
+                            'FOREIGN KEY(primitive_firm_id_workplace) REFERENCES primitive_firm(id)'
                         ');' % (self.name() + '_job'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
@@ -86,7 +90,7 @@ class CrawlerPortalTransparencia(Crawler):
 
     @staticmethod
     def primitive_required():
-        return 'primitive_peoples',
+        return 'primitive_peoples', 'primitive_firm'
 
     @classmethod
     def harvest(cls, primitive_peoples=None, dependencies=None, specific_name=None, specific_siteid=None):
@@ -284,8 +288,15 @@ class CrawlerPortalTransparencia(Crawler):
             if jobs_infos is not None:
                 for i in jobs_infos:
                     i = defaultdict(lambda: None, i)
-                    cls.update_my_table({'type_contract': i['type_contract'], 'job': i['job'], 'workplace': i['workplace'], 'working_hours': i['working_hours']},
-                                        table='job', primitive_id=primitive_id, primitive_name='primitive_peoples')
+                    cls.update_my_table(dict({
+                        'type_contract': i['type_contract'],
+                        'job': i['job'],
+                        'working_hours': i['working_hours']
+                    }, **(lambda: {
+                            'primitive_firm_id_workplace': cls.db.update_primitive_row({}, primitive_filter={'nome_fantasia': i['workplace']}, primitive_name='primitive_firm')
+                        } if i['workplace'] is not None else {}
+                    )()
+                    ), table='job', primitive_id=primitive_id, primitive_name='primitive_peoples')
 
             # Infos salariais
             phantom.get('http://www.portaltransparencia.gov.br/servidores/Servidor-DetalhaRemuneracao.asp?Op=1&bInformacaoFinanceira=True&IdServidor=' + str(current_siteid))

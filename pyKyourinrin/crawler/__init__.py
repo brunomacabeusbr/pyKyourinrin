@@ -70,7 +70,7 @@ class Crawler:
     def update_crawler_status(cls, status, primitive_id=None, primitive_name=None):
         # Verificação a respeito das variáveis temporárias que armazenam a primitive_id e primitive_name
         # todo: código repetido com o método "update_my_table" (dica: lá tá comentanda essa bagunça daqui)
-        if hasattr(cls, 'temp_current_primitive_name'):
+        if hasattr(cls, 'temp_current_primitive_name') and primitive_name is None:
             if (primitive_id is not None or primitive_name is not None) and\
                     (primitive_id != cls.temp_current_primitive_id or primitive_name != cls.temp_current_primitive_name):
                 raise ValueError('Os valores passados estão diferentes do esperado')
@@ -88,7 +88,7 @@ class Crawler:
         # Salvar no banco
         status = (-1, 1)[status]
         Crawler.db.execute(
-            "UPDATE %s_crawler SET %s = ? WHERE id=?" % (primitive_name, cls.name()),
+            "UPDATE %s_crawler SET %s = ? WHERE id=?" % (primitive_name, Crawler.temp_current_crawler.name()),
             (status, primitive_id,)
         )
 

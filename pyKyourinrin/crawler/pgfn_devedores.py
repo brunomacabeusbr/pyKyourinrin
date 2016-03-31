@@ -30,7 +30,7 @@ class CrawlerPgfnDevedores(Crawler):
     @staticmethod
     def macro_at_data():
         def pgfn_debt_total(read):
-            return sum([i['value'] for i in read['debt']])
+            return sum([i['value'] for i in read['pgfn_devedores_debt']])
 
         return (
             {'column_name': 'pgfn_debt_total', 'how': pgfn_debt_total},

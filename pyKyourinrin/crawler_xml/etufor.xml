@@ -1,6 +1,7 @@
 <crawler>
     <primitive_required>
         <primitive harvest_param="">peoples</primitive>
+        <primitive not_indexed_tables="">firm</primitive>
     </primitive_required>
 
     <database>
@@ -19,11 +20,7 @@
             </column>
             <column>
                 <name>school</name>
-                <type>TEXT</type>
-            </column>
-            <column>
-                <name>type</name>
-                <type>TEXT</type>
+                <type primitive="">firm</type>
             </column>
             <column>
                 <name>course</name>

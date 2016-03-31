@@ -18,9 +18,10 @@ class CrawlerEsaj(Crawler):
                             'classe TEXT,'
                             'classe_area TEXT,'
                             'assunto TEXT,'
-                            'juiz TEXT,'
+                            'primitive_peoples_id_juiz INTEGER,'
                             'valor_acao FLOAT,'
-                            'url TEXT'
+                            'url TEXT,'
+                            'FOREIGN KEY(primitive_peoples_id_juiz) REFERENCES primitive_peoples(id)'
                         ');' % (self.name() + '_processo'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
@@ -40,8 +41,9 @@ class CrawlerEsaj(Crawler):
                             'primitive_firm_id INTEGER,'
                             'reference_partes INTEGER,'
                             'justiciario_type TEXT,'
-                            'justiciario_name TEXT,'
-                            'FOREIGN KEY(reference_partes) REFERENCES %s(reference_partes)'
+                            'primitive_peoples_id_justiciario_name INTEGER,'
+                            'FOREIGN KEY(reference_partes) REFERENCES %s(reference_partes),'
+                            'FOREIGN KEY(primitive_peoples_id_justiciario_name) REFERENCES primitive_peoples(id)'
                         ');' % (self.name() + '_partes_justiciario', self.name() + '_partes'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
@@ -131,13 +133,17 @@ class CrawlerEsaj(Crawler):
                         continue
 
                     for l in j['partes_justiciario']:
-                        if l['justiciario_name'] not in added:
-                            added.append(l['justiciario_name'])
-                            to_return.append({'justiciario_name': l['justiciario_name'], 'justiciario_type': l['justiciario_type'], 'justiciario_count': 1})
+                        if l['primitive_peoples_id_justiciario_name'] not in added:
+                            added.append(l['primitive_peoples_id_justiciario_name'])
+                            to_return.append({
+                                'primitive_peoples_id_aliado_justiciario': l['primitive_peoples_id_justiciario_name'],
+                                'justiciario_type': l['justiciario_type'], 'justiciario_count': 1
+                            })
                         else:
                             for i in to_return:
-                                if i['justiciario_name'] != l['justiciario_name']:
+                                if i['primitive_peoples_id_aliado_justiciario'] != l['primitive_peoples_id_justiciario_name']:
                                     continue
+
                                 i['justiciario_count'] = i['justiciario_count'] + 1
 
             return to_return
@@ -268,9 +274,16 @@ class CrawlerEsaj(Crawler):
                 phantom.execute_script("return $('.labelClass:contains(\"Valor da ação\")').closest('tr').find('span').text()")
             valor_acao = (valor_acao, None)[valor_acao == '']
 
-            cls.update_my_table({'processo_number': processo_number, 'processo_grau': processo_grau, 'classe': classe,
-                                 'classe_area': classe_area, 'assunto': assunto, 'juiz': juiz, 'valor_acao': valor_acao, 'url': url},
-                                table='processo')
+            cls.update_my_table({
+                'processo_number': processo_number,
+                'processo_grau': processo_grau,
+                'classe': classe,
+                'classe_area': classe_area,
+                'assunto': assunto,
+                'primitive_peoples_id_juiz': cls.db.update_primitive_row({}, primitive_filter={'name': juiz}, primitive_name='primitive_peoples'),
+                'valor_acao': valor_acao,
+                'url': url}, table='processo'
+            )
             reference_processo = cls.db.lastrowid()
 
             # partes do processo
@@ -306,7 +319,11 @@ class CrawlerEsaj(Crawler):
                         # e abreviações, tais como
                         #   "Ministério Púb" -> "Mininsério Público"
                         #   "Defensor P" -> Defensor Público
-                        cls.update_my_table({'justiciario_type': justiciario_type, 'justiciario_name': justiciario_name.strip().title(), 'reference_partes': reference_partes}, table='partes_justiciario')
+                        cls.update_my_table({
+                            'justiciario_type': justiciario_type,
+                            'primitive_peoples_id_justiciario_name': cls.db.update_primitive_row({}, primitive_filter={'name': justiciario_name.strip().title()}, primitive_name='primitive_peoples'),
+                            'reference_partes': reference_partes
+                        }, table='partes_justiciario')
             else:
                 for i in table_principais.find_elements_by_class_name('fundoClaro'):
                     parte_type = i.find_element_by_css_selector('[align="right"]').text[:-2]
@@ -325,7 +342,11 @@ class CrawlerEsaj(Crawler):
 
                     for i in left_text:
                         justiciario_type, justiciario_name = i.split(': ')
-                        cls.update_my_table({'justiciario_type': justiciario_type, 'justiciario_name': justiciario_name.strip().title(), 'reference_partes': reference_partes}, table='partes_justiciario')
+                        cls.update_my_table({
+                            'justiciario_type': justiciario_type,
+                            'primitive_peoples_id_justiciario_name': cls.db.update_primitive_row({}, primitive_filter={'name': justiciario_name.strip().title()}, primitive_name='primitive_peoples'),
+                            'reference_partes': reference_partes
+                        }, table='partes_justiciario')
 
             # movimentações
             phantom.find_element_by_id('linkmovimentacoes').click()
