@@ -1,10 +1,22 @@
 <primitive>
     <column>
+        <name>cnpj</name>
+        <type>TEXT</type>
+    </column>
+    <column>
         <name>razao_social</name>
         <type>TEXT</type>
     </column>
     <column>
-        <name>cnpj</name>
+        <name>nome_fantasia</name>
+        <type>TEXT</type>
+    </column>
+    <column>
+        <name>porte_empresa</name>
+        <type>TEXT</type>
+    </column>
+    <column>
+        <name>administration</name>
         <type>TEXT</type>
     </column>
 </primitive>
