@@ -13,9 +13,7 @@ import xml.etree.ElementTree as ET
 
 xml_root = ET.parse(xml_file).getroot()
 
-primitives = [i.text for i in xml_root.find('primitive_required').findall('primitive')]
-primitives_harvest = [i.text for i in xml_root.find('primitive_required').findall('primitive') if 'harvest_param' in i.attrib]
-primitives_tables_indexed = [i.text for i in xml_root.find('primitive_required').findall('primitive') if 'not_indexed_tables' not in i.attrib]
+primitive_required = [(i.attrib['type_requirement'], 'primitive_' + i.text) for i in xml_root.find('primitive_required').findall('primitive')]
 table_main_columns = [(i.find('name').text, i.find('type')) for i in xml_root.find('database').find('table_main').findall('column')]
 tables_secondary = OrderedDict(
     (k.find('name').text, [(i.find('name').text, i.find('type')) for i in k.findall('column')])
@@ -105,7 +103,9 @@ def columns_of_table(list_columns):
 
     return ",'\n".join(
         "                            '" + i[0] + ' ' + i[1]
-        for i in [('primitive_' + i2 + '_id', 'INTEGER') for i2 in primitives_tables_indexed] + list_column_name_and_type + list_foreigns
+        for i in [
+            (i2[1] + '_id', 'INTEGER') for i2 in primitive_required if i2[0] == 'harvest' or i2[0] == 'write'
+        ] + list_column_name_and_type + list_foreigns
     )
 
 def write_tables_secondary():
@@ -195,10 +195,9 @@ def harvest_params():
     params = []
 
     # primitives
-    if len(primitives_harvest):
-        for i in primitives_harvest:
-            params.append('primitive_' + i)
-
+    primitive_harvest = [i[1] for i in primitive_required if i[0] == 'harvest']
+    if len(primitive_harvest):
+        params.extend(primitive_harvest)
         params.append('dependencies')
 
     # additional
@@ -236,7 +235,7 @@ class Crawler""" + crawler_name_camel_case + """(Crawler):
 
     @staticmethod
     def primitive_required():
-        return """ + inter_to_tuple(['primitive_' + i for i in primitives]) + """
+        return """ + inter_to_tuple([i[1] for i in primitive_required]) + """
 
     @classmethod
     def harvest(cls""" + harvest_params() + """):

@@ -1,6 +1,6 @@
 <crawler>
     <primitive_required>
-        <primitive harvest_param="">news</primitive>
+        <primitive type_requirement="harvest">news</primitive>
     </primitive_required>
 
     <database>

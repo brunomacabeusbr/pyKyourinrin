@@ -1,7 +1,7 @@
 <crawler>
     <primitive_required>
-        <primitive harvest_param="">peoples</primitive>
-        <primitive harvest_param="">firm</primitive>
+        <primitive type_requirement="harvest">peoples</primitive>
+        <primitive type_requirement="harvest">firm</primitive>
     </primitive_required>
 
     <database>

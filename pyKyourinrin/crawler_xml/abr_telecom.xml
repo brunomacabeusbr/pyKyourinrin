@@ -1,6 +1,6 @@
 <crawler>
     <primitive_required>
-        <primitive harvest_param="">cellphone</primitive>
+        <primitive type_requirement="harvest">cellphone</primitive>
     </primitive_required>
 
     <database>

@@ -1,6 +1,6 @@
 <crawler>
     <primitive_required>
-        <primitive harvest_param="">firm</primitive>
+        <primitive type_requirement="harvest">firm</primitive>
     </primitive_required>
 
     <database>

@@ -14,6 +14,20 @@ class ManagerDatabase:
         ###
         # criar/atualizar banco de dados
 
+        # table main_trigger: usada para armazanar dados de configuração e temporização dos triggers
+        self.execute('CREATE TABLE IF NOT EXISTS main_trigger('
+                        'crawler TEXT,'
+                        'infos TEXT'
+                     ');')
+
+        # Deixar crawlers pronto para serem usados e atualizar a tabela main_trigger
+        Crawler.db = self
+        for cls in Crawler.__subclasses__():
+            setattr(self, 'crawler_' + cls.name(), cls())
+            if cls.trigger.__code__ != Crawler.trigger.__code__:
+                if len(self.execute("SELECT * FROM main_trigger WHERE crawler=?", (cls.name(),)).fetchall()) == 0:
+                    self.execute('INSERT INTO main_trigger (crawler) VALUES (?)', (cls.name(),))
+
         # criar tabelas das primitives com base nos xml
         import xml.etree.ElementTree as ET
 
@@ -39,22 +53,20 @@ class ManagerDatabase:
             )
 
         # Atualizar tabela primitive_##name_crawler de acordo com os cralwers que requerem determinada primitive
-        tables_primitive_list = [
+        primitive_list = [
             i[0] for i in self.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
             if i[0][:9] == 'primitive' and i[0][-7:] != 'crawler'
         ]
+        crawlers_names = [i.name() for i in Crawler.__subclasses__()]
 
-        for cls in Crawler.__subclasses__():
-            primitive_required = [i for i in inspect.getargspec(cls.harvest_debug).args if i[:9] == 'primitive']
-            for i in primitive_required:
-                if i not in tables_primitive_list:
-                    raise ValueError('O crawler "{}" requer a primitiva desconhecida "{}"'.format(cls.name(), i))
-
-                try:
-                    self.execute('ALTER TABLE {} ADD COLUMN {} INTEGER DEFAULT 0;'.format(i + '_crawler', cls.name()))
-                except:
-                     # coluna já existe
-                    pass
+        for i in primitive_list:
+            for i2 in [i3[0] for i3 in self.execute("SELECT name FROM sqlite_master WHERE sql LIKE '%{}_id INTEGER%'".format(i)).fetchall()]:
+                if i2 in crawlers_names:
+                    try:
+                        self.execute('ALTER TABLE {} ADD COLUMN {} INTEGER DEFAULT 0;'.format(i + '_crawler', i2))
+                    except:
+                         # coluna já existe
+                        pass
 
         # table main_arbitrary: permitir setar valores arbitrários
         self.execute('CREATE TABLE IF NOT EXISTS main_arbitrary('
@@ -64,20 +76,6 @@ class ManagerDatabase:
                         'column_value TEXT,'
                         'column_set_integer INTEGER DEFAULT 0'
                      ');')
-
-        # table main_trigger: usada para armazanar dados de configuração e temporização dos triggers
-        self.execute('CREATE TABLE IF NOT EXISTS main_trigger('
-                        'crawler TEXT,'
-                        'infos TEXT'
-                     ');')
-
-        # Deixar crawlers pronto para serem usados e atualizar a tabela main_trigger
-        Crawler.db = self
-        for cls in Crawler.__subclasses__():
-            setattr(self, 'crawler_' + cls.name(), cls())
-            if cls.trigger.__code__ != Crawler.trigger.__code__:
-                if len(self.execute("SELECT * FROM main_trigger WHERE crawler=?", (cls.name(),)).fetchall()) == 0:
-                    self.execute('INSERT INTO main_trigger (crawler) VALUES (?)', (cls.name(),))
 
         # Executar crawlers trigáveis, se assim foi configurado
         if trigger:

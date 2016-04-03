@@ -1,6 +1,6 @@
 <crawler>
     <primitive_required>
-        <primitive>peoples</primitive>
+        <primitive type_requirement="write">peoples</primitive>
     </primitive_required>
 
     <database>

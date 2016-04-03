@@ -1,7 +1,7 @@
 <crawler>
     <primitive_required>
-        <primitive harvest_param="">peoples</primitive>
-        <primitive not_indexed_tables="">firm</primitive>
+        <primitive type_requirement="harvest">peoples</primitive>
+        <primitive type_requirement="reference">firm</primitive>
     </primitive_required>
 
     <database>

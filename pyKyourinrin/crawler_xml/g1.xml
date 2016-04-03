@@ -1,6 +1,6 @@
 <crawler>
     <primitive_required>
-        <primitive>news</primitive>
+        <primitive type_requirement="write">news</primitive>
     </primitive_required>
 
     <database>
