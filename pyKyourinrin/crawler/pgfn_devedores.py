@@ -9,12 +9,12 @@ from selenium.webdriver.support import expected_conditions as EC
 class CrawlerPgfnDevedores(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_peoples_id INTEGER,'
+                            'primitive_person_id INTEGER,'
                             'primitive_firm_id INTEGER'
                         ');' % self.name())
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_peoples_id INTEGER,'
+                            'primitive_person_id INTEGER,'
                             'primitive_firm_id INTEGER,'
                             'inscription_number TEXT,'
                             'value FLOAT,'
@@ -46,14 +46,14 @@ class CrawlerPgfnDevedores(Crawler):
 
     @staticmethod
     def crop():
-        return ('name', 'primitive_peoples'), ('cpf', 'primitive_peoples'), ('cnpj', 'primitive_firm'), ('razao_social', 'primitive_firm'), 'pgfn_debt_total'
+        return ('name', 'primitive_person'), ('cpf', 'primitive_person'), ('cnpj', 'primitive_firm'), ('razao_social', 'primitive_firm'), 'pgfn_debt_total'
 
     @staticmethod
     def primitive_required():
-        return 'primitive_peoples', 'primitive_firm'
+        return 'primitive_person', 'primitive_firm'
 
     @classmethod
-    def harvest(cls, primitive_peoples=None, primitive_firm=None, dependencies=None):
+    def harvest(cls, primitive_person=None, primitive_firm=None, dependencies=None):
         phantom = webdriver.PhantomJS(service_args=['--ignore-ssl-errors=true', '--ssl-protocol=any'])
         phantom.get('https://www2.pgfn.fazenda.gov.br/ecac/contribuinte/devedores/listaDevedores.jsf')
         captchar_id = phantom.find_element_by_id('txtToken_captcha_serpro_gov_br').get_attribute('value')
@@ -102,7 +102,7 @@ class CrawlerPgfnDevedores(Crawler):
 
         cls.update_my_table({})
 
-        if primitive_peoples is not None:
+        if primitive_person is not None:
             cls.db.update_primitive_row(
                 {'cpf': phantom.find_element_by_id('listaDevedoresForm:devedoresTable:0:j_id80').text,
                 'name': phantom.find_element_by_id('listaDevedoresForm:devedoresTable:0:j_id83').text}

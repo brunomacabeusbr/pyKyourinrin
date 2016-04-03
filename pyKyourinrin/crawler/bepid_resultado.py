@@ -6,7 +6,7 @@ import tools.pdf
 class CrawlerBepidResultado(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_peoples_id INTEGER,'
+                            'primitive_person_id INTEGER,'
                             'bepid_position INTEGER,'
                             'bepid_score INTEGER,'
                             'bepid_ranked_first INTEGER,'
@@ -27,7 +27,7 @@ class CrawlerBepidResultado(Crawler):
 
     @staticmethod
     def primitive_required():
-        return 'primitive_peoples',
+        return 'primitive_person',
 
     @classmethod
     def harvest(cls):
@@ -50,10 +50,10 @@ class CrawlerBepidResultado(Crawler):
 
         # Save
         for i in regexp_first.findall(content_first):
-            primitive_id = cls.db.get_primitive_id_by_filter({'name': i[1], 'birthday_day': i[2], 'birthday_month': i[3], 'birthday_year': i[4]}, 'primitive_peoples')
+            primitive_id = cls.db.get_primitive_id_by_filter({'name': i[1], 'birthday_day': i[2], 'birthday_month': i[3], 'birthday_year': i[4]}, 'primitive_person')
 
             cls.update_my_table({'bepid_position': i[0], 'bepid_score': float(i[5].replace(',', '.')),
                                  'bepid_ranked_first': (0, 1)[i[6] == 'Classificado'],
                                  'bepid_ranked_second': (0, 1)[i[1] in ranked_second_stage]},
-                                primitive_id=primitive_id, primitive_name='primitive_peoples')
-            cls.update_crawler_status(True, primitive_id=primitive_id, primitive_name='primitive_peoples')
+                                primitive_id=primitive_id, primitive_name='primitive_person')
+            cls.update_crawler_status(True, primitive_id=primitive_id, primitive_name='primitive_person')

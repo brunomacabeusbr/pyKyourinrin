@@ -1,6 +1,6 @@
 <maltego_config>
     <primitive_icons>
-        <primitive name="peoples">AdultMale</primitive>
+        <primitive name="person">AdultMale</primitive>
         <primitive name="firm">Company</primitive>
         <primitive name="cellphone">MobilePhoneGolden</primitive>
         <primitive name="news">Document</primitive>

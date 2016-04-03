@@ -7,7 +7,7 @@ from tools.misc_phantom import element_image_download
 class CrawlerTribunalSuperiorEleitoralDomicilioEleitoral(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_peoples_id INTEGER,'
+                            'primitive_person_id INTEGER,'
                             'voter_registration TEXT,'
                             'domicilio_eleitoral_zona TEXT,'
                             'domicilio_eleitoral_secao TEXT,'
@@ -48,10 +48,10 @@ class CrawlerTribunalSuperiorEleitoralDomicilioEleitoral(Crawler):
 
     @staticmethod
     def primitive_required():
-        return 'primitive_peoples',
+        return 'primitive_person',
 
     @classmethod
-    def harvest(cls, primitive_peoples=None, dependencies=None):
+    def harvest(cls, primitive_person=None, dependencies=None):
         # todo: falta considerar caso a pessoa não tenha título de eleitor
         if 'name' in dependencies:
             url = 'http://apps.tse.jus.br/saae/consultaLocalVotacaoNome.do'
@@ -100,7 +100,7 @@ class CrawlerTribunalSuperiorEleitoralDomicilioEleitoral(Crawler):
 
         s = l[15].text.split(' - ')
 
-        # todo: por para salvar o nome no peoples
+        # todo: por para salvar o nome no person
         # todo: tá salvando o estado com espaço no começo
         cls.update_my_table({'voter_registration': l[2].text, 'domicilio_eleitoral_zona': l[7].text,
                              'domicilio_eleitoral_secao': l[9].text, 'domicilio_eleitoral_local': l[11].text,

@@ -7,11 +7,11 @@ from selenium import webdriver
 class CrawlerQSelecao(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_peoples_id INTEGER'
+                            'primitive_person_id INTEGER'
                         ');' % self.name())
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                        'primitive_peoples_id INTEGER,'
+                        'primitive_person_id INTEGER,'
                         'name_public_tender TEXT,'
                         'course TEXT'
                         ');' % (self.name() + '_public_tender'))
@@ -70,7 +70,7 @@ class CrawlerQSelecao(Crawler):
 
     @staticmethod
     def primitive_required():
-        return 'primitive_peoples',
+        return 'primitive_person',
 
     # salva no banco todos dados de todos os candidatos de todos os concursos ou do concurso especificado
     @classmethod
@@ -122,8 +122,8 @@ class CrawlerQSelecao(Crawler):
             regex_get_id_candidato_concurso = re.compile(r'idcandidatoconcurso=(\d+)')
             for i in range(26):
                 while True:
-                    peoples = phantom.execute_script("return $('#ctl00_ContentPlaceHolderPrincipal_grvConsulta tbody tr a[target]')")
-                    for i3 in peoples:
+                    person = phantom.execute_script("return $('#ctl00_ContentPlaceHolderPrincipal_grvConsulta tbody tr a[target]')")
+                    for i3 in person:
                         list_to_return.append(int(regex_get_id_candidato_concurso.search(i3.get_attribute('href')).group(1)))
 
                     if not pages_number_next():
@@ -166,14 +166,14 @@ class CrawlerQSelecao(Crawler):
                 # há casos a serem lidados como em http://qselecao.ifce.edu.br/cartao_identificacao_dinamico.aspx?idcandidatoconcurso=328680&etapa=1
                 infos['identity'] = people_identity
 
-            primitive_id = cls.db.update_primitive_row(infos, primitive_filter={'name': people_name}, primitive_name='primitive_peoples',)
+            primitive_id = cls.db.update_primitive_row(infos, primitive_filter={'name': people_name}, primitive_name='primitive_person')
 
             try:
-                cls.update_my_table({}, primitive_id=primitive_id, primitive_name='primitive_peoples')
+                cls.update_my_table({}, primitive_id=primitive_id, primitive_name='primitive_person')
             except:
                 pass
-            cls.update_my_table({'name_public_tender': publicTender, 'course': course}, table='public_tender', primitive_id=primitive_id, primitive_name='primitive_peoples')
-            cls.update_crawler_status(True, primitive_id=primitive_id, primitive_name='primitive_peoples')
+            cls.update_my_table({'name_public_tender': publicTender, 'course': course}, table='public_tender', primitive_id=primitive_id, primitive_name='primitive_person')
+            cls.update_crawler_status(True, primitive_id=primitive_id, primitive_name='primitive_person')
 
         if specifc_concurso is None:
             target = crawler_all_qselecao_concursos()

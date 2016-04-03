@@ -7,12 +7,12 @@ import re
 class CrawlerPortalTransparencia(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_peoples_id INTEGER,'
+                            'primitive_person_id INTEGER,'
                             'federal_employee_type TEXT'
                         ');' % self.name())
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_peoples_id INTEGER,'
+                            'primitive_person_id INTEGER,'
                             'type_contract TEXT,'
                             'job TEXT,'
                             'primitive_firm_id_workplace INTEGER,'
@@ -21,14 +21,14 @@ class CrawlerPortalTransparencia(Crawler):
                         ');' % (self.name() + '_job'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_peoples_id INTEGER,'
+                            'primitive_person_id INTEGER,'
                             'reference INTEGER PRIMARY KEY AUTOINCREMENT,'
                             'month INTEGER,'
                             'year INTEGER'
                         ');' % (self.name() + '_remuneration_date'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_peoples_id INTEGER,'
+                            'primitive_person_id INTEGER,'
                             'reference_remuneration_date INTEGER,'
                             'type TEXT,'
                             'value INTEGER,'
@@ -90,10 +90,10 @@ class CrawlerPortalTransparencia(Crawler):
 
     @staticmethod
     def primitive_required():
-        return 'primitive_peoples', 'primitive_firm'
+        return 'primitive_person', 'primitive_firm'
 
     @classmethod
-    def harvest(cls, primitive_peoples=None, dependencies=None, specific_name=None, specific_siteid=None):
+    def harvest(cls, primitive_person=None, dependencies=None, specific_name=None, specific_siteid=None):
         phantom = webdriver.PhantomJS()
 
         # retorna o siteid da(s) pessoa(s) com a query específica
@@ -118,8 +118,8 @@ class CrawlerPortalTransparencia(Crawler):
             list_to_return = []
 
             for i in range(0, total_pages):
-                peoples = phantom.find_elements_by_css_selector('[summary="Lista de Servidores"] tr:not(:first-child)')
-                for i2 in peoples:
+                person = phantom.find_elements_by_css_selector('[summary="Lista de Servidores"] tr:not(:first-child)')
+                for i2 in person:
                     list_to_return.append({'siteid': i2.find_element_by_tag_name('a').get_attribute('href')[-7:],
                                            'name': i2.find_element_by_tag_name('a').get_attribute('innerHTML').strip().title()})
 
@@ -142,20 +142,20 @@ class CrawlerPortalTransparencia(Crawler):
         if (specific_name is not None) and (specific_siteid is not None):
             raise ValueError("Só forneça um dos dois: ou o nome a ser buscando ou o siteid")
 
-        if (primitive_peoples is not None) and ((specific_name is not None) or (specific_siteid is not None)):
+        if (primitive_person is not None) and ((specific_name is not None) or (specific_siteid is not None)):
             raise ValueError("Não forneça o id no banco de dados junto do nome a ser buscado ou o siteid")
 
-        if primitive_peoples is None:
+        if primitive_person is None:
             if (specific_name is None) and (specific_siteid is None):
                 # Se nada for especificado, recolherá todo o site
-                list_peoples = get_siteid_all()
+                list_person = get_siteid_all()
             elif specific_name is not None:
                 # Se tiver sido fornecido o nome a ser buscado, usará na busca
-                list_peoples = get_siteid_specific(specific_name)
+                list_person = get_siteid_specific(specific_name)
             elif specific_siteid is not None:
                 # Se tiver sido fornecido o id no site, checará apenas ele
                 # todo: talvez seja bom verificar se o siteid é válido
-                list_peoples = [{'siteid': specific_siteid}]
+                list_person = [{'siteid': specific_siteid}]
             else:
                 raise ValueError("Condição não especificada antes")
         else:
@@ -164,22 +164,22 @@ class CrawlerPortalTransparencia(Crawler):
                 query = dependencies['name']
             else:
                 query = dependencies['cpf']
-            list_peoples = get_siteid_specific(query)
+            list_person = get_siteid_specific(query)
 
             # Nós queremos apenas a pessoa da query especificada, e mais nenhuma além
             # Em alguns casos, se pesquisar pelo nome, pode vim outras pessoas da qual não estamos interessados, como, por exemplo,
             # se pesquisar por "Francisco José da Silva", pode vim "Francisco José da Costa e Silva", mas não queremos este último
             if 'name' in dependencies:
-                list_peoples = [{'siteid': i['siteid'], 'name': i['name']} for i in list_peoples
+                list_person = [{'siteid': i['siteid'], 'name': i['name']} for i in list_person
                                 if i['name'].upper() == dependencies['name'].upper()]
 
             # Se tiver retornado nada, é porque essa pessoa especificada não está presente no Portal da Transparencia
-            if len(list_peoples) == 0:
+            if len(list_person) == 0:
                 cls.update_crawler_status(False)
                 return
 
-        list_peoples = [i['siteid'] for i in list_peoples]
-        for current_siteid in list_peoples:
+        list_person = [i['siteid'] for i in list_person]
+        for current_siteid in list_person:
             phantom.get('http://www.portaltransparencia.gov.br/servidores/Servidor-DetalhaServidor.asp?IdServidor=' + str(current_siteid))
 
             # Infos básicas
@@ -189,13 +189,13 @@ class CrawlerPortalTransparencia(Crawler):
             people_name = people_name.title()
 
             # todo: precisa lidar com o caso do cpf ser parcial para poder salva-lo e usa-lo
-            if primitive_peoples is None:
-                primitive_id = cls.db.update_primitive_row({}, primitive_filter={'name': people_name}, primitive_name='primitive_peoples') # chamar esse método passando {} é útil para criar a primitive row caso não exista
+            if primitive_person is None:
+                primitive_id = cls.db.update_primitive_row({}, primitive_filter={'name': people_name}, primitive_name='primitive_person') # chamar esse método passando {} é útil para criar a primitive row caso não exista
             else:
                 cls.db.update_primitive_row({'name': people_name})
-                primitive_id = primitive_peoples
+                primitive_id = primitive_person
 
-            cls.update_my_table({'federal_employee_type': people_federal_employee_type}, primitive_id=primitive_id, primitive_name='primitive_peoples')
+            cls.update_my_table({'federal_employee_type': people_federal_employee_type}, primitive_id=primitive_id, primitive_name='primitive_person')
 
             # Infos do emprego
             jobs_infos = phantom.execute_script(
@@ -296,7 +296,7 @@ class CrawlerPortalTransparencia(Crawler):
                             'primitive_firm_id_workplace': cls.db.update_primitive_row({}, primitive_filter={'nome_fantasia': i['workplace']}, primitive_name='primitive_firm')
                         } if i['workplace'] is not None else {}
                     )()
-                    ), table='job', primitive_id=primitive_id, primitive_name='primitive_peoples')
+                    ), table='job', primitive_id=primitive_id, primitive_name='primitive_person')
 
             # Infos salariais
             phantom.get('http://www.portaltransparencia.gov.br/servidores/Servidor-DetalhaRemuneracao.asp?Op=1&bInformacaoFinanceira=True&IdServidor=' + str(current_siteid))
@@ -315,7 +315,7 @@ class CrawlerPortalTransparencia(Crawler):
                     ).groups()
 
                 cls.update_my_table({'month': month, 'year': year},
-                                    table='remuneration_date', primitive_id=primitive_id, primitive_name='primitive_peoples')
+                                    table='remuneration_date', primitive_id=primitive_id, primitive_name='primitive_person')
                 reference_remuneration_date = cls.db.lastrowid()
 
                 remunerations_infos = phantom.execute_script(
@@ -333,7 +333,7 @@ class CrawlerPortalTransparencia(Crawler):
 
                 for i2 in remunerations_infos:
                     cls.update_my_table({'reference_remuneration_date': reference_remuneration_date, 'type': i2['type'], 'value': i2['value']},
-                                        table='remuneration_info', primitive_id=primitive_id, primitive_name='primitive_peoples')
+                                        table='remuneration_info', primitive_id=primitive_id, primitive_name='primitive_person')
 
             # Finalizar
-            cls.update_crawler_status(True, primitive_id=primitive_id, primitive_name='primitive_peoples')
+            cls.update_crawler_status(True, primitive_id=primitive_id, primitive_name='primitive_person')

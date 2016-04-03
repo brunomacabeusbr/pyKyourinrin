@@ -9,12 +9,12 @@ import re
 class CrawlerEtufor(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_peoples_id INTEGER,'
+                            'primitive_person_id INTEGER,'
                             'cia INTEGER'
                         ');' % self.name())
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_peoples_id INTEGER,'
+                            'primitive_person_id INTEGER,'
                             'timestamp TEXT,'
                             'primitive_firm_id_school INTEGER,'
                             'course TEXT,'
@@ -56,10 +56,10 @@ class CrawlerEtufor(Crawler):
 
     @staticmethod
     def primitive_required():
-        return 'primitive_peoples', 'primitive_firm'
+        return 'primitive_person', 'primitive_firm'
 
     @classmethod
-    def harvest(cls, primitive_peoples=None, dependencies=None):
+    def harvest(cls, primitive_person=None, dependencies=None):
         phantom = webdriver.PhantomJS()
 
         phantom.get('http://www.etufor.ce.gov.br/index_novo.asp?pagina=sit_carteira2007.asp')

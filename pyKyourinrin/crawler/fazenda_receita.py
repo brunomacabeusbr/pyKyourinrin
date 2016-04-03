@@ -8,7 +8,7 @@ import json
 class CrawlerFazendaReceita(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_peoples_id INTEGER,'
+                            'primitive_person_id INTEGER,'
                             'death_year INTEGER'
                         ');' % self.name())
 
@@ -26,10 +26,10 @@ class CrawlerFazendaReceita(Crawler):
 
     @staticmethod
     def primitive_required():
-        return 'primitive_peoples',
+        return 'primitive_person',
 
     @classmethod
-    def harvest(cls, primitive_peoples=None, dependencies=None):
+    def harvest(cls, primitive_person=None, dependencies=None):
         day_month_year = '{:02}{:02}{:04}'.format(dependencies['birthday_day'], dependencies['birthday_month'], dependencies['birthday_year'])
         my_hash = hmac(b'Sup3RbP4ssCr1t0grPhABr4sil', bytes(dependencies['cpf'] + day_month_year, 'utf8'), sha1).hexdigest()
 

@@ -1,6 +1,6 @@
 <crawler>
     <primitive_required>
-        <primitive type_requirement="harvest">peoples</primitive>
+        <primitive type_requirement="harvest">person</primitive>
         <primitive type_requirement="harvest">firm</primitive>
     </primitive_required>
 
@@ -46,8 +46,8 @@
     </dependencies>
 
     <crop>
-        <info primitive="peoples">name</info>
-        <info primitive="peoples">cpf</info>
+        <info primitive="person">name</info>
+        <info primitive="person">cpf</info>
         <info primitive="firm">cnpj</info>
         <info primitive="firm">razao_social</info>
         <info>pgfn_debt_total</info>
