@@ -6,8 +6,6 @@ setup(
         'requests',
         'PyPDF2',
         'selenium',
-        'networkx',
-        'matplotlib',
         'pyslibtesseract',
         'aylien-apiclient'
         # todo: precisa exigir o phantomjs

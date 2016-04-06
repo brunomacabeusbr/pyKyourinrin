@@ -25,9 +25,7 @@ macro_at_data = []
 if macro_at_data_root:
     macro_at_data = [i.text for i in macro_at_data_root.findall('name')]
 dependencies = [[i2.text for i2 in i.findall('dependence')] for i in xml_root.find('dependencies').findall('route')]
-crop =\
-    [i.text for i in xml_root.find('crop').findall('info') if 'primitive' not in i.attrib] +\
-    [(i.text, i.attrib['primitive']) for i in xml_root.find('crop').findall('info') if 'primitive' in i.attrib]
+crop = [i.text for i in xml_root.find('crop').findall('info')]
 harvest = {i.tag: i.text for i in xml_root.find('harvest') if i.tag == 'url'} # todo: colocar para usar a tag url
 harvest['param_additional'] = [i.text for i in xml_root.find('harvest').findall('param_additional')]
 
@@ -179,9 +177,9 @@ def inter_to_tuple_multi_line(inter, indentation_ideep):
 
 def write_crop():
     if len(crop) == 1:
-        return "'{}',".format(crop[0])
+        return "'{}',".format(crop)
     else:
-        return ', '.join(["'{}'".format(i) for i in crop if type(i) is str] + ["('{}', 'primitive_{}')".format(i[0], i[1]) for i in crop if type(i) is tuple])
+        return ', '.join(["'{}'".format(i) for i in crop])
 
 def write_dependencies():
     if len(dependencies[0]) == 0:

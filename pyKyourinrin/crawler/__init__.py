@@ -110,14 +110,14 @@ class Crawler:
 
     @staticmethod
     @abstractmethod
-    def primitive_required(): pass # deve-se listar aqui as primitives que são requeridos na chamada do harvest, usadas dentro do harvest salva ou nas dependencies
+    def primitive_required(): pass
 
     @classmethod
     def trigger(cls, table_row): pass
 
     @classmethod
     @abstractmethod
-    def harvest(cls, id): pass
+    def harvest(cls): pass
 
 
 # Carregar todos os crawlers da pasta
@@ -135,23 +135,30 @@ for i in os.listdir(my_path):
     importlib.import_module('crawler.' + py_name)
 
 
-# Carregar grafo de depedência a respeito dos cralwes
-from graphdependencies import GraphDependenciesOfPrimitiveRow
+# Associar informações aos crawlers que o provém
+# No dicionário 'dict_info_to_crawlers' a chave será o nome da info e o value uma lista com os crawlers em que pode-se consegui-la
+from collections import defaultdict
+dict_info_to_crawlers = defaultdict(list)
+
+[
+    dict_info_to_crawlers[current_crop].append(cls)
+
+    for cls in Crawler.__subclasses__()
+    if cls.have_dependencies() is True
+
+    for current_crop in cls.crop()
+]
 
 # Decorator implícito, colocado nos métodos harvest dos crawlers que possuem depedências,
 # para pega-las do banco de dados e colocar no dict 'dependencies' da chamada do método
 class GetDependencies:
     def __init__(self, f):
+        self.f = f
         self.name = f.name()
         self.harvest = f.harvest
         self.dependencies = f.dependencies()
         self.multiple_dependence_routes = (type(self.dependencies[0]) == tuple)
 
-    # todo: Em um raro caso pode ocasionar um loop infinito
-    # Para esse caso acontecer, o crawler A precisa da info X, da qual não está presente no banco.
-    # Então o método harvest_dependence será chamado para coletar a info X, da qual pode ser alcançada usando o cralwer B
-    # Porém, uma depedência de B não presente no banco é a info Y, da qual pode ser coletada através do crawler A.
-    # Esse raro caso resultada num loop infinito A -> B -> A -> B ...
     def __call__(self, *args, **kwargs):
         arg_primitive = [i for i in kwargs.keys() if i[:9] == 'primitive']
 
@@ -159,13 +166,11 @@ class GetDependencies:
         # então prosseguirá normalmente para a função harvest do crawler, se o crawler esperar por isso
         if len(arg_primitive) == 0:
             self.harvest(*args, **kwargs)
-            Crawler.db.commit() # todo: isso aqui não é redudante?
             return
 
         # Checar erro na passagem da primitiva
         if len(arg_primitive) > 1:
-            raise ValueError('Só é permitido passar um único id de primitive.\n'
-                             'Se for necessário ambos para o crawler, crie um relacionamento na tabela "main_linker_primitives"')
+            raise ValueError('Só é possível passar um único id de primitive!\n')
 
         primitive_name = arg_primitive[0]
         import inspect
@@ -176,8 +181,7 @@ class GetDependencies:
 
         # Recolher dependências
         primitive_id = kwargs[primitive_name]
-
-        gdp = GraphDependenciesOfPrimitiveRow(Crawler.db, primitive_id, primitive_name[10:])
+        crawler_list_used = list(Crawler.db.crawler_list_used(primitive_id, primitive_name[10:]))
 
         if self.multiple_dependence_routes:
             # Se houver várias rotas de depedência, seguirá o seguinte algorítimo:
@@ -198,14 +202,18 @@ class GetDependencies:
                     dict_dependencies = current_dict_dependencies
                     break
 
-                # A rota tem todos os dados faltosos alcançáveis?
+                # Alguns dos dados faltosos são alcançáveis apenas com crawlers que já tenham sido usado?
                 use_it = True
                 for k, v in current_dict_dependencies.items():
                     if v is not None:
                         continue
 
-                    if gdp.is_dependence_reachable(k, exclude_crawler=self.name) is False:
+                    for i2 in dict_info_to_crawlers[k]:
+                        if i2 not in crawler_list_used:
+                            break
                         use_it = False
+
+                    if use_it is False:
                         break
 
                 if use_it is False:
@@ -227,10 +235,31 @@ class GetDependencies:
         # Se não estiver, então vai colhe-la e chamar novamente esse mesmo método
         for dependence_name, dependence_value in dict_dependencies.items():
             if dependence_value is None:
-                if gdp.harvest_dependence(dependence_name):
+                if 'crawlers_tried' not in kwargs:
+                    kwargs['crawlers_tried'] = []
+
+                for i in dict_info_to_crawlers[dependence_name]:
+                    # se o crawler já tiver sido usado, não devemos tentar usa-lo novamente
+                    if i.name() in crawler_list_used or i in kwargs['crawlers_tried']:
+                        continue
+
+                    # verificar se esse crawler pode usar essa primitive
+                    harvest_args = inspect.getargspec(i.harvest_debug).args
+                    if primitive_name not in harvest_args:
+                        continue
+
+                    # adicionar à lita de crawlers já tentados, para evitar loop infinito
+                    kwargs['crawlers_tried'].append(i)
+
+                    # tentar colher o crawlers que provém a dependência faltante e então voltará a esse mesmo crawler de agora
+                    i.harvest(*args, **kwargs)
+                    Crawler.temp_current_crawler = self.f # todo: resolver esse código estranho! precisa redeclarar a variável temporária do crawler em que está executando
                     return self.__call__(*args, **kwargs)
-                else:
-                    return False
+
+                return False
+
+        if 'crawlers_tried' in kwargs:
+            del kwargs['crawlers_tried']
 
         # "Passar" de forma implícita variáveis temporárias ao Crawler, úteis na hora de salvar as infos no banco de dados
         Crawler.temp_current_primitive_name = primitive_name

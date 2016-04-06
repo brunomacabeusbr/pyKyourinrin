@@ -46,10 +46,10 @@
     </dependencies>
 
     <crop>
-        <info primitive="person">name</info>
-        <info primitive="person">cpf</info>
-        <info primitive="firm">cnpj</info>
-        <info primitive="firm">razao_social</info>
+        <info>name</info>
+        <info>cpf</info>
+        <info>cnpj</info>
+        <info>razao_social</info>
         <info>pgfn_debt_total</info>
     </crop>
 

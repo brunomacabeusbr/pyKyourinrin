@@ -177,7 +177,7 @@ class CrawlerEsaj(Crawler):
 
     @staticmethod
     def crop():
-        return 'name_social', 'cia', 'name', 'name_monther', 'birthday_day', 'birthday_month', 'birthday_year', 'last_school_name'
+        return 'aliados_juridicos', 'processos'
 
     @staticmethod
     def primitive_required():
