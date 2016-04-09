@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='pyKyorinrin',
+    name='spyck',
     install_requires=[
         'requests',
         'PyPDF2',
