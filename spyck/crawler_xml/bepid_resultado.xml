@@ -1,7 +1,7 @@
 <crawler>
-    <primitive_required>
-        <primitive type_requirement="write">person</primitive>
-    </primitive_required>
+    <entity_required>
+        <entity type_requirement="write">person</entity>
+    </entity_required>
 
     <database>
         <table_main>

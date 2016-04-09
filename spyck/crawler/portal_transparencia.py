@@ -7,28 +7,28 @@ import re
 class CrawlerPortalTransparencia(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_person_id INTEGER,'
+                            'entity_person_id INTEGER,'
                             'federal_employee_type TEXT'
                         ');' % self.name())
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_person_id INTEGER,'
+                            'entity_person_id INTEGER,'
                             'type_contract TEXT,'
                             'job TEXT,'
-                            'primitive_firm_id_workplace INTEGER,'
+                            'entity_firm_id_workplace INTEGER,'
                             'working_hours TEXT,'
-                            'FOREIGN KEY(primitive_firm_id_workplace) REFERENCES primitive_firm(id)'
+                            'FOREIGN KEY(entity_firm_id_workplace) REFERENCES entity_firm(id)'
                         ');' % (self.name() + '_job'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_person_id INTEGER,'
+                            'entity_person_id INTEGER,'
                             'reference INTEGER PRIMARY KEY AUTOINCREMENT,'
                             'month INTEGER,'
                             'year INTEGER'
                         ');' % (self.name() + '_remuneration_date'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_person_id INTEGER,'
+                            'entity_person_id INTEGER,'
                             'reference_remuneration_date INTEGER,'
                             'type TEXT,'
                             'value INTEGER,'
@@ -89,11 +89,11 @@ class CrawlerPortalTransparencia(Crawler):
         return 'federal_employee_type', 'salary_average', 'job'
 
     @staticmethod
-    def primitive_required():
-        return 'primitive_person', 'primitive_firm'
+    def entity_required():
+        return 'entity_person', 'entity_firm'
 
     @classmethod
-    def harvest(cls, primitive_person=None, dependencies=None, specific_name=None, specific_siteid=None):
+    def harvest(cls, entity_person=None, dependencies=None, specific_name=None, specific_siteid=None):
         phantom = webdriver.PhantomJS()
 
         # retorna o siteid da(s) pessoa(s) com a query específica
@@ -142,10 +142,10 @@ class CrawlerPortalTransparencia(Crawler):
         if (specific_name is not None) and (specific_siteid is not None):
             raise ValueError("Só forneça um dos dois: ou o nome a ser buscando ou o siteid")
 
-        if (primitive_person is not None) and ((specific_name is not None) or (specific_siteid is not None)):
+        if (entity_person is not None) and ((specific_name is not None) or (specific_siteid is not None)):
             raise ValueError("Não forneça o id no banco de dados junto do nome a ser buscado ou o siteid")
 
-        if primitive_person is None:
+        if entity_person is None:
             if (specific_name is None) and (specific_siteid is None):
                 # Se nada for especificado, recolherá todo o site
                 list_person = get_siteid_all()
@@ -189,13 +189,13 @@ class CrawlerPortalTransparencia(Crawler):
             people_name = people_name.title()
 
             # todo: precisa lidar com o caso do cpf ser parcial para poder salva-lo e usa-lo
-            if primitive_person is None:
-                primitive_id = cls.db.update_primitive_row({}, primitive_filter={'name': people_name}, primitive_name='primitive_person') # chamar esse método passando {} é útil para criar a primitive row caso não exista
+            if entity_person is None:
+                entity_id = cls.db.update_entity_row({}, entity_filter={'name': people_name}, entity_name='entity_person') # chamar esse método passando {} é útil para criar a entity row caso não exista
             else:
-                cls.db.update_primitive_row({'name': people_name})
-                primitive_id = primitive_person
+                cls.db.update_entity_row({'name': people_name})
+                entity_id = entity_person
 
-            cls.update_my_table({'federal_employee_type': people_federal_employee_type}, primitive_id=primitive_id, primitive_name='primitive_person')
+            cls.update_my_table({'federal_employee_type': people_federal_employee_type}, entity_id=entity_id, entity_name='entity_person')
 
             # Infos do emprego
             jobs_infos = phantom.execute_script(
@@ -293,10 +293,10 @@ class CrawlerPortalTransparencia(Crawler):
                         'job': i['job'],
                         'working_hours': i['working_hours']
                     }, **(lambda: {
-                            'primitive_firm_id_workplace': cls.db.update_primitive_row({}, primitive_filter={'nome_fantasia': i['workplace']}, primitive_name='primitive_firm')
+                            'entity_firm_id_workplace': cls.db.update_entity_row({}, entity_filter={'nome_fantasia': i['workplace']}, entity_name='entity_firm')
                         } if i['workplace'] is not None else {}
                     )()
-                    ), table='job', primitive_id=primitive_id, primitive_name='primitive_person')
+                    ), table='job', entity_id=entity_id, entity_name='entity_person')
 
             # Infos salariais
             phantom.get('http://www.portaltransparencia.gov.br/servidores/Servidor-DetalhaRemuneracao.asp?Op=1&bInformacaoFinanceira=True&IdServidor=' + str(current_siteid))
@@ -315,7 +315,7 @@ class CrawlerPortalTransparencia(Crawler):
                     ).groups()
 
                 cls.update_my_table({'month': month, 'year': year},
-                                    table='remuneration_date', primitive_id=primitive_id, primitive_name='primitive_person')
+                                    table='remuneration_date', entity_id=entity_id, entity_name='entity_person')
                 reference_remuneration_date = cls.db.lastrowid()
 
                 remunerations_infos = phantom.execute_script(
@@ -333,7 +333,7 @@ class CrawlerPortalTransparencia(Crawler):
 
                 for i2 in remunerations_infos:
                     cls.update_my_table({'reference_remuneration_date': reference_remuneration_date, 'type': i2['type'], 'value': i2['value']},
-                                        table='remuneration_info', primitive_id=primitive_id, primitive_name='primitive_person')
+                                        table='remuneration_info', entity_id=entity_id, entity_name='entity_person')
 
             # Finalizar
-            cls.update_crawler_status(True, primitive_id=primitive_id, primitive_name='primitive_person')
+            cls.update_crawler_status(True, entity_id=entity_id, entity_name='entity_person')

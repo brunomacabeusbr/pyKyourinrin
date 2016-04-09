@@ -5,7 +5,7 @@ from selenium import webdriver
 class CrawlerAbrTelecom(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_cellphone_id INTEGER'
+                            'entity_cellphone_id INTEGER'
                         ');' % self.name())
 
     @staticmethod
@@ -21,11 +21,11 @@ class CrawlerAbrTelecom(Crawler):
         return 'operator',
 
     @staticmethod
-    def primitive_required():
-        return 'primitive_cellphone',
+    def entity_required():
+        return 'entity_cellphone',
 
     @classmethod
-    def harvest(cls, primitive_cellphone=None, dependencies=None):
+    def harvest(cls, entity_cellphone=None, dependencies=None):
         phantom = webdriver.PhantomJS()
 
         def get_error():
@@ -55,5 +55,5 @@ class CrawlerAbrTelecom(Crawler):
             cls.update_crawler_status(False)
             return
 
-        cls.db.update_primitive_row({'operator': phantom.find_element_by_class_name('gridselecionado').find_elements_by_tag_name('td')[2].text})
+        cls.db.update_entity_row({'operator': phantom.find_element_by_class_name('gridselecionado').find_elements_by_tag_name('td')[2].text})
         cls.update_crawler_status(True)

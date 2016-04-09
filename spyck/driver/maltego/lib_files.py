@@ -7,7 +7,7 @@ class MaltegoEntity:
 
         self.list_entity = []
 
-    def new_entity_info_from_primitive(self, name, icon):
+    def new_entity_info_from_entity(self, name, icon):
         self.list_entity.append(name)
 
         maltego_entity = ET.Element('MaltegoEntity', id='spyck.{}'.format(name), displayName=name,
@@ -15,8 +15,8 @@ class MaltegoEntity:
 
         properties = ET.SubElement(maltego_entity, 'Properties', value='info')
         fields = ET.SubElement(properties, 'Fields')
-        ET.SubElement(fields, 'Field', name='from_primitive_id', type='string', nullable='false', hidden='true', readonly='true')
-        ET.SubElement(fields, 'Field', name='from_primitive_name', type='string', nullable='false', hidden='true', readonly='true')
+        ET.SubElement(fields, 'Field', name='from_entity_id', type='string', nullable='false', hidden='true', readonly='true')
+        ET.SubElement(fields, 'Field', name='from_entity_name', type='string', nullable='false', hidden='true', readonly='true')
         ET.SubElement(fields, 'Field', name='column', type='string', nullable='false', hidden='true', readonly='true')
         ET.SubElement(fields, 'Field', name='index', type='string', nullable='false', hidden='true', readonly='true') # todo: ele é apenas da entidade info_list
         ET.SubElement(fields, 'Field', name='info', type='string', nullable='false',
@@ -25,7 +25,7 @@ class MaltegoEntity:
         with open(self.directory_save_file + 'spyck/spyck.{}.entity'.format(name), 'x') as f:
             f.write(ET.tostring(maltego_entity, encoding='utf8', pretty_print=True, xml_declaration=False).decode())
 
-    def new_entity_primitive(self, name, icon, main_column_name, main_column_type):
+    def new_entity_entity(self, name, icon, main_column_name, main_column_type):
         self.list_entity.append(name)
 
         maltego_entity = ET.Element('MaltegoEntity', id='spyck.{}'.format(name), displayName=name,
@@ -33,9 +33,9 @@ class MaltegoEntity:
 
         properties = ET.SubElement(maltego_entity, 'Properties', value=main_column_name)
         fields = ET.SubElement(properties, 'Fields')
-        tag_primitive_name = ET.SubElement(fields, 'Field', name='primitive_name', type='string', nullable='false',
+        tag_entity_name = ET.SubElement(fields, 'Field', name='entity_name', type='string', nullable='false',
                                            hidden='true', readonly='true')
-        ET.SubElement(tag_primitive_name, 'SampleValue').text = name
+        ET.SubElement(tag_entity_name, 'SampleValue').text = name
         ET.SubElement(fields, 'Field', name='table_id', type='int', nullable='false', hidden='false',
                       readonly='false', displayName='table_id')
         translate_type = {'TEXT': 'string', 'INTEGER': 'int', 'FLOAT': 'float'}
@@ -92,7 +92,7 @@ class MaltegoTransform:
         self.list_transform = []
 
     def new_transform(self, name, entity_exclusive, parameter):
-        for i in entity_exclusive: # gambiarra por conta do constraint ser um "e lógico", e não "ou lógico", e há crawlers que podem ser executador tanto por uma como por outra primitive
+        for i in entity_exclusive: # gambiarra por conta do constraint ser um "e lógico", e não "ou lógico", e há crawlers que podem ser executador tanto por uma como por outra entity
             # MaltegoTransform
             maltego_transform = ET.Element('MaltegoTransform', name='spyck.{}_{}'.format(name, i), displayName=name, abstract='false',
                                            visibility='public', requireDisplayInfo='false')

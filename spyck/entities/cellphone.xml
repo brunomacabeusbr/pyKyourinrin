@@ -1,4 +1,4 @@
-<primitive>
+<entity>
     <column>
         <name>phone_number</name>
         <type>TEXT</type>
@@ -7,4 +7,4 @@
         <name>operator</name>
         <type>TEXT</type>
     </column>
-</primitive>
+</entity>

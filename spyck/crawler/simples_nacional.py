@@ -5,13 +5,13 @@ from selenium import webdriver
 class CrawlerSimplesNacional(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_firm_id INTEGER,'
+                            'entity_firm_id INTEGER,'
                             'date_start_simples_nacional TEXT,'
                             'date_start_simei TEXT'
                         ');' % self.name())
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_firm_id INTEGER,'
+                            'entity_firm_id INTEGER,'
                             'date_initial TEXT,'
                             'date_end TEXT,'
                             'message TEXT'
@@ -36,11 +36,11 @@ class CrawlerSimplesNacional(Crawler):
         return 'razao_social', 'date_start_simples_nacional', 'date_start_simei', 'history_simples_nacional'
 
     @staticmethod
-    def primitive_required():
-        return 'primitive_firm',
+    def entity_required():
+        return 'entity_firm',
 
     @classmethod
-    def harvest(cls, primitive_firm=None, dependencies=None):
+    def harvest(cls, entity_firm=None, dependencies=None):
         phantom = webdriver.PhantomJS()
 
         ###
@@ -78,7 +78,7 @@ class CrawlerSimplesNacional(Crawler):
         else:
             save_simei = text_simei[-10:]
 
-        cls.db.update_primitive_row({'razao_social': phantom.find_element_by_id('ctl00_ContentPlaceHolderConteudo_lblNomeEmpresa').text})
+        cls.db.update_entity_row({'razao_social': phantom.find_element_by_id('ctl00_ContentPlaceHolderConteudo_lblNomeEmpresa').text})
         cls.update_my_table({'date_start_simples_nacional': save_simples_nacional, 'date_start_simei': save_simei})
 
         table_history_simples_nacional = phantom.find_elements_by_id('ctl00_ContentPlaceHolderConteudo_GridViewOpcoesAnteriores')
@@ -91,6 +91,6 @@ class CrawlerSimplesNacional(Crawler):
         if phantom.find_element_by_id('ctl00_ContentPlaceHolderConteudo_lblSIMEIPeriodosAnteriores').text[-11:] != 'Não Existem':
             # todo: não implementei ainda a parte de colher em "Opções pelo SIMEI em Períodos Anteriores" por não ter
             # encontrado uma empresa de exemplo
-            print('Nessa empresa de id {} há informação coletável em "Opções pelo SIMEI em Períodos Anteriores" ainda não implementada no crawler!'.format(primitive_firm))
+            print('Nessa empresa de id {} há informação coletável em "Opções pelo SIMEI em Períodos Anteriores" ainda não implementada no crawler!'.format(entity_firm))
 
         cls.update_crawler_status(True)

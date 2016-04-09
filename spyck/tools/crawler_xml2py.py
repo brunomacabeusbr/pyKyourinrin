@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 
 xml_root = ET.parse(xml_file).getroot()
 
-primitive_required = [(i.attrib['type_requirement'], 'primitive_' + i.text) for i in xml_root.find('primitive_required').findall('primitive')]
+entity_required = [(i.attrib['type_requirement'], 'entity_' + i.text) for i in xml_root.find('entity_required').findall('entity')]
 table_main_columns = [(i.find('name').text, i.find('type')) for i in xml_root.find('database').find('table_main').findall('column')]
 tables_secondary = OrderedDict(
     (k.find('name').text, [(i.find('name').text, i.find('type')) for i in k.findall('column')])
@@ -32,8 +32,8 @@ harvest['param_additional'] = [i.text for i in xml_root.find('harvest').findall(
 # Verificar nomes
 # explicação do black_list: no primeiro elemento da tupla, fica o nome que não pode ser usado, no segundo a sua localização
 #   os parâmetros de localização são: 'first' se o nome não pode ficar no começo ou 'equal' se o nome não pdoe ser exatamente aquele
-black_list_name_crawler = [('main', 'first'), ('primitive', 'first')]
-black_list_name_column = [('primitive', 'first'), ('reference', 'first'), ('id', 'equal')]
+black_list_name_crawler = [('main', 'first'), ('entity', 'first')]
+black_list_name_column = [('entity', 'first'), ('reference', 'first'), ('id', 'equal')]
 white_list_type_column = ['TEXT', 'INTEGER', 'FLOAT']
 
 def check_black_list(name, black_list):
@@ -53,13 +53,13 @@ check_black_list(xml_name, black_list_name_crawler)
 
 for i in table_main_columns:
     check_black_list(i[0], black_list_name_column)
-    if 'primitive' not in i[1].attrib:
+    if 'entity' not in i[1].attrib:
         check_white_list(i[1].text, white_list_type_column)
 
 for i in tables_secondary.values():
     for i2 in i:
         check_black_list(i2[0], black_list_name_column)
-        if 'primitive' not in i2[1].attrib:
+        if 'entity' not in i2[1].attrib:
             check_white_list(i2[1].text, white_list_type_column)
 
 for i in macro_at_data:
@@ -80,8 +80,8 @@ def columns_of_table(list_columns):
             )
             continue
 
-        if 'primitive' in i[1].attrib:
-            column_name = 'primitive_{}_id_{}'.format(i[1].text, i[0])
+        if 'entity' in i[1].attrib:
+            column_name = 'entity_{}_id_{}'.format(i[1].text, i[0])
 
             list_column_name_and_type.append(
                 (
@@ -90,7 +90,7 @@ def columns_of_table(list_columns):
                 )
             )
 
-            list_foreigns.append(('FOREIGN KEY({})'.format(column_name), 'REFERENCES primitive_{}(id)'.format(i[1].text)))
+            list_foreigns.append(('FOREIGN KEY({})'.format(column_name), 'REFERENCES entity_{}(id)'.format(i[1].text)))
         else:
             list_column_name_and_type.append(
                 (
@@ -102,7 +102,7 @@ def columns_of_table(list_columns):
     return ",'\n".join(
         "                            '" + i[0] + ' ' + i[1]
         for i in [
-            (i2[1] + '_id', 'INTEGER') for i2 in primitive_required if i2[0] == 'harvest' or i2[0] == 'write'
+            (i2[1] + '_id', 'INTEGER') for i2 in entity_required if i2[0] == 'harvest' or i2[0] == 'write'
         ] + list_column_name_and_type + list_foreigns
     )
 
@@ -192,10 +192,10 @@ def write_dependencies():
 def harvest_params():
     params = []
 
-    # primitives
-    primitive_harvest = [i[1] for i in primitive_required if i[0] == 'harvest']
-    if len(primitive_harvest):
-        params.extend(primitive_harvest)
+    # entities
+    entity_harvest = [i[1] for i in entity_required if i[0] == 'harvest']
+    if len(entity_harvest):
+        params.extend(entity_harvest)
         params.append('dependencies')
 
     # additional
@@ -232,8 +232,8 @@ class Crawler""" + crawler_name_camel_case + """(Crawler):
         return """ + write_crop() + """
 
     @staticmethod
-    def primitive_required():
-        return """ + inter_to_tuple([i[1] for i in primitive_required]) + """
+    def entity_required():
+        return """ + inter_to_tuple([i[1] for i in entity_required]) + """
 
     @classmethod
     def harvest(cls""" + harvest_params() + """):

@@ -28,19 +28,19 @@ class ManagerDatabase:
                 if len(self.execute("SELECT * FROM main_trigger WHERE crawler=?", (cls.name(),)).fetchall()) == 0:
                     self.execute('INSERT INTO main_trigger (crawler) VALUES (?)', (cls.name(),))
 
-        # criar tabelas das primitives com base nos xml
+        # criar tabelas das entities com base nos xml
         import xml.etree.ElementTree as ET
 
-        for current_xml in os.listdir(path_spyck + '/primitives/'):
-            xml_root = ET.parse('primitives/' + current_xml).getroot()
+        for current_xml in os.listdir(path_spyck + '/entities/'):
+            xml_root = ET.parse('entities/' + current_xml).getroot()
             columns = [(current_xml.find('name').text, current_xml.find('type').text) for current_xml in xml_root.findall('column')]
 
-            primitive_name = current_xml[:-4]
+            entity_name = current_xml[:-4]
             self.execute(
                 'CREATE TABLE IF NOT EXISTS {}('
                     'id INTEGER PRIMARY KEY AUTOINCREMENT,'
                     '{}'
-                ');'.format('primitive_' + primitive_name,
+                ');'.format('entity_' + entity_name,
                             ','.join([i[0] + ' ' + i[1] for i in columns]))
             )
 
@@ -48,18 +48,18 @@ class ManagerDatabase:
                 'CREATE TABLE IF NOT EXISTS {}('
                     'id INTEGER,'
                     'FOREIGN KEY(id) REFERENCES {}(id)'
-                ');'.format('primitive_' + primitive_name + '_crawler',
-                            'primitive_' + primitive_name)
+                ');'.format('entity_' + entity_name + '_crawler',
+                            'entity_' + entity_name)
             )
 
-        # Atualizar tabela primitive_##name_crawler de acordo com os cralwers que requerem determinada primitive
-        primitive_list = [
+        # Atualizar tabela entity_##name_crawler de acordo com os cralwers que requerem determinada entity
+        entity_list = [
             i[0] for i in self.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
-            if i[0][:9] == 'primitive' and i[0][-7:] != 'crawler'
+            if i[0][:6] == 'entity' and i[0][-7:] != 'crawler'
         ]
         crawlers_names = [i.name() for i in Crawler.__subclasses__()]
 
-        for i in primitive_list:
+        for i in entity_list:
             for i2 in [i3[0] for i3 in self.execute("SELECT name FROM sqlite_master WHERE sql LIKE '%{}_id INTEGER%'".format(i)).fetchall()]:
                 if i2 in crawlers_names:
                     try:
@@ -70,8 +70,8 @@ class ManagerDatabase:
 
         # table main_arbitrary: permitir setar valores arbitrários
         self.execute('CREATE TABLE IF NOT EXISTS main_arbitrary('
-                        'primitive_id INTEGER,'
-                        'primitive_name TEXT,'
+                        'entity_id INTEGER,'
+                        'entity_name TEXT,'
                         'column_name TEXT,'
                         'column_value TEXT,'
                         'column_set_integer INTEGER DEFAULT 0'
@@ -114,83 +114,83 @@ class ManagerDatabase:
 
         return to_return
 
-    def count_primitive_rows_with_this_filters(self, primitive_filter, primitive_name):
-        # todo: só filtra com base nos dados da tabela pricipal da primitive
+    def count_entity_rows_with_this_filters(self, entity_filter, entity_name):
+        # todo: só filtra com base nos dados da tabela pricipal da entity
         return len(self.execute("SELECT * FROM %s WHERE %s" %
-                                (primitive_name,
-                                 'AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in primitive_filter.items()))).fetchall())
+                                (entity_name,
+                                 'AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in entity_filter.items()))).fetchall())
 
-    def new_primitive_row(self, primitive_infos, primitive_name): # todo: esse parâmetro primitive_name foge dos padrões, pois precisa ser o "primitive_##name"
-        primitive_infos = {k: "'{}'".format(str(v).replace("'", "''")) for k, v in primitive_infos.items()}
-        self.execute('INSERT INTO ' + primitive_name + ' (' + ','.join(primitive_infos.keys()) + ') VALUES (' + ','.join(primitive_infos.values()) + ')')
-        self.execute('INSERT INTO ' + primitive_name + '_crawler (id) VALUES (?)', (self.lastrowid(),))
+    def new_entity_row(self, entity_infos, entity_name): # todo: esse parâmetro entity_name foge dos padrões, pois precisa ser o "entity_##name"
+        entity_infos = {k: "'{}'".format(str(v).replace("'", "''")) for k, v in entity_infos.items()}
+        self.execute('INSERT INTO ' + entity_name + ' (' + ','.join(entity_infos.keys()) + ') VALUES (' + ','.join(entity_infos.values()) + ')')
+        self.execute('INSERT INTO ' + entity_name + '_crawler (id) VALUES (?)', (self.lastrowid(),))
 
-    def update_primitive_row(self, column_and_value, primitive_filter=None, primitive_name=None):
-        if hasattr(Crawler, 'temp_current_primitive_name') and primitive_name is None:
-            if primitive_filter is not None or primitive_name is not None:
-                raise ValueError('Se não for usar o valor temporário, vindo da primitive_id passada no harvest,'
-                                 'use os parâmetros "primitive_filter" e "primitive_name"')
+    def update_entity_row(self, column_and_value, entity_filter=None, entity_name=None):
+        if hasattr(Crawler, 'temp_current_entity_name') and entity_name is None:
+            if entity_filter is not None or entity_name is not None:
+                raise ValueError('Se não for usar o valor temporário, vindo da entity_id passada no harvest,'
+                                 'use os parâmetros "entity_filter" e "entity_name"')
 
-            primitive_name = Crawler.temp_current_primitive_name
-            where_statement = ' WHERE id=' + str(Crawler.temp_current_primitive_id)
+            entity_name = Crawler.temp_current_entity_name
+            where_statement = ' WHERE id=' + str(Crawler.temp_current_entity_id)
         else:
-            if primitive_filter is None or primitive_name is None:
-                raise ValueError('É necessário fornecer o parâmetro "primitive_filter" e "primitive_name" para eu saber qual primitive row eu irei atualizar,'
-                                 'uma vez em que esse crawler não recebeu como parâmetro um id de primitive')
-            if primitive_name not in Crawler.temp_current_crawler.primitive_required():
-                raise ValueError('A primitive que você está tentando acessar, "{}", não está listada entre as requeridas pelo crawler'.format(primitive_name))
+            if entity_filter is None or entity_name is None:
+                raise ValueError('É necessário fornecer o parâmetro "entity_filter" e "entity_name" para eu saber qual entity row eu irei atualizar,'
+                                 'uma vez em que esse crawler não recebeu como parâmetro um id de entity')
+            if entity_name not in Crawler.temp_current_crawler.entity_required():
+                raise ValueError('A entity que você está tentando acessar, "{}", não está listada entre as requeridas pelo crawler'.format(entity_name))
 
-            # Verificar se a primitive row já existe e, caso não exista, cria
+            # Verificar se a entity row já existe e, caso não exista, cria
             # todo: essa checagem é otimista, pois não considera o seguinte caso:
             #  suponha que o filtro seja pelo nome "João", e no meu banco eu tenha uma pessoa que não sei o nome e um que se chame 1 João,
-            #  então dará certo, pois como só tem uma pessoa que cumpra o filtro, e assim editará essa única primitive row,
+            #  então dará certo, pois como só tem uma pessoa que cumpra o filtro, e assim editará essa única entity row,
             #  porém, a pessoa em que eu não sei o nome pode se chamar João e acabar editando a errada
-            count_people = self.count_primitive_rows_with_this_filters(primitive_filter, primitive_name)
+            count_people = self.count_entity_rows_with_this_filters(entity_filter, entity_name)
             if count_people == 0:
-                self.new_primitive_row(primitive_filter, primitive_name)
+                self.new_entity_row(entity_filter, entity_name)
             elif count_people > 1:
-                raise ValueError('Há mais que uma primitive row com os critérios fornecidos! Não sei qual eu devo atualizar')
+                raise ValueError('Há mais que uma entity row com os critérios fornecidos! Não sei qual eu devo atualizar')
 
-            # Definir qual linha da primitive deve ser atualizada
-            where_statement = ' WHERE %s ' % ' AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in primitive_filter.items())
+            # Definir qual linha da entity deve ser atualizada
+            where_statement = ' WHERE %s ' % ' AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in entity_filter.items())
 
         # Salvar no banco
         column_and_value = {i: j for i, j in column_and_value.items() if j is not None}
 
         if len(column_and_value) > 0:
-            self.execute("UPDATE " + primitive_name +
+            self.execute("UPDATE " + entity_name +
                          " SET " + ','.join("{}='{}'".format(key, str(val).replace("'", "''")) for key, val in column_and_value.items()) +
                          where_statement)
 
-        # Retornar primitive id que foi editado - isso é útil para crawler nascente
-        return self.execute("SELECT id FROM %s %s" % (primitive_name, where_statement)).fetchone()[0]
+        # Retornar entity id que foi editado - isso é útil para crawler nascente
+        return self.execute("SELECT id FROM %s %s" % (entity_name, where_statement)).fetchone()[0]
 
-    def crawler_list_status(self, primitive_id, primitive_name):
+    def crawler_list_status(self, entity_id, entity_name):
         return self.select_column_and_value(
-            'SELECT * FROM primitive_' + primitive_name + '_crawler WHERE id=?', (primitive_id,), discard=['id']
+            'SELECT * FROM entity_' + entity_name + '_crawler WHERE id=?', (entity_id,), discard=['id']
         )
 
-    def crawler_list_used(self, primitive_id, primitive_name):
-        return {k: v for k, v in self.crawler_list_status(primitive_id, primitive_name).items() if v != 0}
+    def crawler_list_used(self, entity_id, entity_name):
+        return {k: v for k, v in self.crawler_list_status(entity_id, entity_name).items() if v != 0}
 
-    def crawler_list_success(self, primitive_id, primitive_name):
-        return [k for k, v in self.crawler_list_status(primitive_id, primitive_name).items() if v == 1]
+    def crawler_list_success(self, entity_id, entity_name):
+        return [k for k, v in self.crawler_list_status(entity_id, entity_name).items() if v == 1]
 
-    def get_primitive_row_info(self, primitive_id, primitive_name, get_tables_secondary=True):
-        crawler_list_success = self.crawler_list_success(primitive_id, primitive_name)
+    def get_entity_row_info(self, entity_id, entity_name, get_tables_secondary=True):
+        crawler_list_success = self.crawler_list_success(entity_id, entity_name)
         crawler_list_success_cls = [i for i in Crawler.__subclasses__() if i.name() in crawler_list_success]
-        crawler_list_success_cls = [i for i in crawler_list_success_cls if 'primitive_' + primitive_name in inspect.getargspec(i.harvest_debug).args]
+        crawler_list_success_cls = [i for i in crawler_list_success_cls if 'entity_' + entity_name in inspect.getargspec(i.harvest_debug).args]
 
         ###
-        # Recolher infos da tabela da primitive e da tabela principal dos crawlers
+        # Recolher infos da tabela da entity e da tabela principal dos crawlers
         fieldnames = self.select_column_and_value(
-            'SELECT * FROM primitive_{} '.format(primitive_name) +
+            'SELECT * FROM entity_{} '.format(entity_name) +
             ' '.join([
-                'INNER JOIN {} ON {}.primitive_{}_id == {}'.format(i.name(), i.name(), primitive_name, primitive_id)
+                'INNER JOIN {} ON {}.entity_{}_id == {}'.format(i.name(), i.name(), entity_name, entity_id)
                 for i in crawler_list_success_cls
             ]) +
-            ' WHERE primitive_{}.id == {}'.format(primitive_name, primitive_id),
-            discard=['id', 'primitive_{}_id'.format(primitive_name)]
+            ' WHERE entity_{}.id == {}'.format(entity_name, entity_id),
+            discard=['id', 'entity_{}_id'.format(entity_name)]
         )
 
         ###
@@ -220,8 +220,8 @@ class ManagerDatabase:
 
                     # recolher infos da tabela
                     infos = self.select_column_and_value_many(
-                        'SELECT * FROM {} WHERE {}.primitive_{}_id == {}'.format(
-                            current_table_name_full, current_table_name_full, primitive_name, primitive_id
+                        'SELECT * FROM {} WHERE {}.entity_{}_id == {}'.format(
+                            current_table_name_full, current_table_name_full, entity_name, entity_id
                         )
                     )
 
@@ -248,11 +248,11 @@ class ManagerDatabase:
                     fieldnames[i['column_name']] = i['how'](fieldnames)
 
         ###
-        # Listar primitives que referenciam para min
+        # Listar entities que referenciam para min
         # todo: precisa ser feito isso ainda
         # para isso, talvez eu precise criar uma tabela para fazer esse trabalho
-        # sempre que uma linha for se referir a uma primitive, precisará escrever nessa tabela
-        # ela terá as colunas "id", "nome da tabela em que foi referenciada", "nome da coluna em que a primitive id foi referenciada"
+        # sempre que uma linha for se referir a uma entity, precisará escrever nessa tabela
+        # ela terá as colunas "id", "nome da tabela em que foi referenciada", "nome da coluna em que a entity id foi referenciada"
 
         ###
         # Recolher infos da tabela main_arbitrary
@@ -265,7 +265,7 @@ class ManagerDatabase:
         fieldnames.update(
             {
                 i['column_name']: get_value_typed(i) for i in
-                self.select_column_and_value_many('SELECT * FROM main_arbitrary WHERE primitive_id=? and primitive_name=?', (primitive_id, primitive_name))
+                self.select_column_and_value_many('SELECT * FROM main_arbitrary WHERE entity_id=? and entity_name=?', (entity_id, entity_name))
             }
         )
 
@@ -277,8 +277,8 @@ class ManagerDatabase:
 
     # Retorna um dicionário com os dados requeridos em "dependencies", porém,
     # se algum dos dados requeridos em "dependencies" não for pertecente à primitiva, retornará apenas False
-    def get_dependencies(self, primitive_id, primitive_name, *dependencies):
-        infos = self.get_primitive_row_info(primitive_id, primitive_name)
+    def get_dependencies(self, entity_id, entity_name, *dependencies):
+        infos = self.get_entity_row_info(entity_id, entity_name)
         infos_keys = list(infos.keys())
 
         if len([i for i in dependencies if i not in infos_keys]) > 0:
@@ -286,12 +286,12 @@ class ManagerDatabase:
 
         return {k: v for k, v in infos.items() if k in dependencies}
 
-    def get_primitive_id_by_filter(self, primitive_filter, primitive_name):
-        count_people = self.count_primitive_rows_with_this_filters(primitive_filter, primitive_name)
+    def get_entity_id_by_filter(self, entity_filter, entity_name):
+        count_people = self.count_entity_rows_with_this_filters(entity_filter, entity_name)
         if count_people == 0:
             return False
         elif count_people > 1:
             raise ValueError('Há mais que uma linha com os critérios fornecidos! Não sei de qual eu devo entregar o ID')
 
-        return self.execute("SELECT * FROM " + primitive_name + " WHERE %s" %
-                            ' AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in primitive_filter.items())).fetchone()[0]
+        return self.execute("SELECT * FROM " + entity_name + " WHERE %s" %
+                            ' AND '.join("{}='{}'".format(k, str(v).replace("'", "''")) for k, v in entity_filter.items())).fetchone()[0]

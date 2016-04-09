@@ -32,92 +32,92 @@ import spyck.driver.maltego.lib_files
 
 def execute_crawler():
     if 'populator_crawler' in args.keys():
-        # essa esquisitice é para saber quais primitive row que foram afetadas pelo crawler populator
+        # essa esquisitice é para saber quais entity row que foram afetadas pelo crawler populator
         # para isso, adicionamos um código que será executado antes da função update_crawler_status
-        list_primitive_row = []
+        list_entity_row = []
         from crawler import Crawler
 
-        class PrimitiveRowRecord:
+        class EntityRowRecord:
             def __init__(self, f):
                 self.update_crawler_status = f
 
             def __call__(self, *foo, **kwargs):
-                list_primitive_row.append((kwargs['primitive_id'], kwargs['primitive_name']))
+                list_entity_row.append((kwargs['entity_id'], kwargs['entity_name']))
                 self.update_crawler_status(*foo, **kwargs)
 
-        Crawler.update_crawler_status = PrimitiveRowRecord(getattr(db, 'crawler_' + args['populator_crawler']).update_crawler_status)
+        Crawler.update_crawler_status = EntityRowRecord(getattr(db, 'crawler_' + args['populator_crawler']).update_crawler_status)
         #
 
         getattr(db, 'crawler_' + args['populator_crawler']).harvest(**{k: v for k, v in args.items() if k != 'populator_crawler'})
 
         mm = lib_files.MaltegoMessage()
-        for primitive_id, primitive_name in list_primitive_row:
-            x = mm.add_entity('spyck.{}'.format(primitive_name[10:]), value=Crawler.db.execute('SELECT * FROM ' + primitive_name + ' WHERE id=?', (primitive_id,)).fetchone()[1])
-            x.add_additional_fields('table_id', primitive_id)
-            x.add_additional_fields('primitive_name', primitive_name[10:])
+        for entity_id, entity_name in list_entity_row:
+            x = mm.add_entity('spyck.{}'.format(entity_name[10:]), value=Crawler.db.execute('SELECT * FROM ' + entity_name + ' WHERE id=?', (entity_id,)).fetchone()[1])
+            x.add_additional_fields('table_id', entity_id)
+            x.add_additional_fields('entity_name', entity_name[10:])
         mm.show()
     else:
         crawler_name = sys.argv[2]
 
-        getattr(db, 'crawler_' + crawler_name).harvest(**{'primitive_' + args['primitive_name']: int(args['table_id'])})
+        getattr(db, 'crawler_' + crawler_name).harvest(**{'entity_' + args['entity_name']: int(args['table_id'])})
         get_info_all()
 
 
 def get_info_all():
-    infos = db.get_primitive_row_info(int(args['table_id']), args['primitive_name'])
+    infos = db.get_entity_row_info(int(args['table_id']), args['entity_name'])
 
     mm = lib_files.MaltegoMessage()
     for k, v in infos.items():
         if v is None:
             continue
 
-        if k[:9] == 'primitive':
-            primitive_name = k.split('_', 3)
-            x = mm.add_entity('spyck.' + primitive_name, value='{}: {} id {}'.format(primitive_name[-1]. primitive_name[1], v))
+        if k[:6] == 'entity':
+            entity_name = k.split('_', 3)
+            x = mm.add_entity('spyck.' + entity_name, value='{}: {} id {}'.format(entity_name[-1]. entity_name[1], v))
             x.add_additional_fields('table_id', v)
-            x.add_additional_fields('primitive_name', primitive_name[1])
+            x.add_additional_fields('entity_name', entity_name[1])
         elif type(v) is list:
-            x = mm.add_entity('spyck.info_list', value='{} from {} {}: {} sub-itens'.format(k, args['primitive_name'], args['table_id'], len(v)))
+            x = mm.add_entity('spyck.info_list', value='{} from {} {}: {} sub-itens'.format(k, args['entity_name'], args['table_id'], len(v)))
             x.add_additional_fields('dict_path', "['" + k + "']")
         else:
             x = mm.add_entity('spyck.info', value='{}: {}'.format(k, v))
 
-        x.add_additional_fields('from_primitive_id', args['table_id'])
-        x.add_additional_fields('from_primitive_name', args['primitive_name'])
+        x.add_additional_fields('from_entity_id', args['table_id'])
+        x.add_additional_fields('from_entity_name', args['entity_name'])
     mm.show()
 
 
 def unpack_list():
-    infos = db.get_primitive_row_info(int(args['from_primitive_id']), args['from_primitive_name'])
+    infos = db.get_entity_row_info(int(args['from_entity_id']), args['from_entity_name'])
     infos = eval('infos' + args['dict_path'])
 
     mm = lib_files.MaltegoMessage()
 
     if type(infos) is list:
         for i in range(len(infos)):
-            x = mm.add_entity('spyck.info_list', value='sub-iten {} from {} by {} {}'.format(i, args['dict_path'], args['from_primitive_name'], args['from_primitive_id']))
+            x = mm.add_entity('spyck.info_list', value='sub-iten {} from {} by {} {}'.format(i, args['dict_path'], args['from_entity_name'], args['from_entity_id']))
             x.add_additional_fields('dict_path', args['dict_path'] + '[' + str(i) + ']')
-            x.add_additional_fields('from_primitive_id', args['from_primitive_id'])
-            x.add_additional_fields('from_primitive_name', args['from_primitive_name'])
+            x.add_additional_fields('from_entity_id', args['from_entity_id'])
+            x.add_additional_fields('from_entity_name', args['from_entity_name'])
     else:
         for k, v in infos.items():
             if v is None:
                 continue
 
             if type(v) is list:
-                x = mm.add_entity('spyck.info_list', value='{} from {} by {} {}'.format(k, args['dict_path'], args['from_primitive_name'], args['from_primitive_id']))
+                x = mm.add_entity('spyck.info_list', value='{} from {} by {} {}'.format(k, args['dict_path'], args['from_entity_name'], args['from_entity_id']))
                 x.add_additional_fields('dict_path', args['dict_path'] + "['" + k + "']")
             else:
-                if k[:9] == 'primitive':
-                    primitive_name = k.split('_', 3)
-                    x = mm.add_entity('spyck.' + primitive_name[1], value='{}: {} id {}'.format(primitive_name[-1], primitive_name[1], v))
+                if k[:6] == 'entity':
+                    entity_name = k.split('_', 3)
+                    x = mm.add_entity('spyck.' + entity_name[1], value='{}: {} id {}'.format(entity_name[-1], entity_name[1], v))
                     x.add_additional_fields('table_id', v)
-                    x.add_additional_fields('primitive_name', primitive_name[1])
+                    x.add_additional_fields('entity_name', entity_name[1])
                 else:
                     x = mm.add_entity('spyck.info', value='{}: {}'.format(k, v))
 
-            x.add_additional_fields('from_primitive_id', args['from_primitive_id'])
-            x.add_additional_fields('from_primitive_name', args['from_primitive_name'])
+            x.add_additional_fields('from_entity_id', args['from_entity_id'])
+            x.add_additional_fields('from_entity_name', args['from_entity_name'])
 
     mm.show()
 
@@ -143,11 +143,11 @@ def generate_files():
     ###
     # read xml config
     maltego_config = ET.parse(folder_this_file + '/config.xml').getroot()
-    primitive_icon_dict = {i.attrib['name']: i.text for i in maltego_config.find('primitive_icons').findall('primitive')}
+    entity_icon_dict = {i.attrib['name']: i.text for i in maltego_config.find('entity_icons').findall('entity')}
 
     ###
     # entidades
-    primitives_names = []
+    entities_names = []
 
     dir_save_files = maltego_folder + '/com/paterva/maltego/entities/common/'
     os.makedirs(dir_save_files)
@@ -158,8 +158,8 @@ def generate_files():
     me = lib_files.MaltegoEntity(dir_save_files)
 
     # arbitrárias
-    me.new_entity_info_from_primitive('info', 'Phrase')
-    me.new_entity_info_from_primitive('info_list', 'OsiModelGolden')
+    me.new_entity_info_from_entity('info', 'Phrase')
+    me.new_entity_info_from_entity('info_list', 'OsiModelGolden')
 
     # crawlers populares
     crawler_populator = []
@@ -169,7 +169,7 @@ def generate_files():
         if len(harvest_args) == 1:
             continue
         for i in harvest_args:
-            if i[:10] == 'primitive_':
+            if i[:7] == 'entity_':
                 jump = True
                 break
         if jump:
@@ -178,15 +178,15 @@ def generate_files():
         me.new_entity_crawler_populator(current_crawler.name(), 'Objects', harvest_args[1]) # todo: precisa ser generalizado! pois pode ser que algum crawler populator receba mais que apenas um único crawler_param
         crawler_populator.append(current_crawler)
 
-    # primitives
-    for current_xml in os.listdir(folder_spyck + '/primitives/'):
-        crawler_root = ET.parse(folder_spyck + '/primitives/' + current_xml).getroot()
+    # entities
+    for current_xml in os.listdir(folder_spyck + '/entities/'):
+        crawler_root = ET.parse(folder_spyck + '/entities/' + current_xml).getroot()
         current_xml = current_xml[:-4]
-        primitives_names.append(current_xml)
+        entities_names.append(current_xml)
 
         column_name, column_type = crawler_root.find('column').find('name').text, crawler_root.find('column').find('type').text
 
-        me.new_entity_primitive(current_xml, primitive_icon_dict[current_xml], column_name, column_type)
+        me.new_entity_entity(current_xml, entity_icon_dict[current_xml], column_name, column_type)
 
     # layer
     me.save_layer()
@@ -203,7 +203,7 @@ def generate_files():
     mt = lib_files.MaltegoTransform('/usr/bin/python3', folder_spyck, dir_save_files)
 
     # crawler arbitrário get_info_all
-    mt.new_transform('get_info_all', [i for i in primitives_names], 'get_info_all')
+    mt.new_transform('get_info_all', [i for i in entities_names], 'get_info_all')
     mt.new_transform('unpack_list', ['info_list'], 'unpack_list')
 
     # crawlers de verdade
@@ -211,7 +211,7 @@ def generate_files():
         if current_crawler in crawler_populator:
             continue
 
-        mt.new_transform(current_crawler.name(), [i[10:] for i in inspect.getargspec(current_crawler.harvest_debug).args if i[:10] == 'primitive_'], 'execute_crawler {}'.format(current_crawler.name()))
+        mt.new_transform(current_crawler.name(), [i[10:] for i in inspect.getargspec(current_crawler.harvest_debug).args if i[:7] == 'entity_'], 'execute_crawler {}'.format(current_crawler.name()))
 
     # crawler populator
     for current_crawler in crawler_populator:

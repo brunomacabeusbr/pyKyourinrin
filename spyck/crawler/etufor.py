@@ -9,17 +9,17 @@ import re
 class CrawlerEtufor(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_person_id INTEGER,'
+                            'entity_person_id INTEGER,'
                             'cia INTEGER'
                         ');' % self.name())
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_person_id INTEGER,'
+                            'entity_person_id INTEGER,'
                             'timestamp TEXT,'
-                            'primitive_firm_id_school INTEGER,'
+                            'entity_firm_id_school INTEGER,'
                             'course TEXT,'
                             'turn TEXT,'
-                            'FOREIGN KEY(primitive_firm_id_school) REFERENCES primitive_firm(id)'
+                            'FOREIGN KEY(entity_firm_id_school) REFERENCES entity_firm(id)'
                         ');' % (self.name() + '_records_school'))
 
     @staticmethod
@@ -32,8 +32,8 @@ class CrawlerEtufor(Crawler):
     def macro_at_data():
         def last_school_name(read):
             if len(read['etufor_records_school']) > 0:
-                return Crawler.db.get_primitive_row_info(
-                    read['etufor_records_school'][-1]['primitive_firm_id_school'],
+                return Crawler.db.get_entity_row_info(
+                    read['etufor_records_school'][-1]['entity_firm_id_school'],
                     'firm', get_tables_secondary=False)['nome_fantasia']
             else:
                 return None
@@ -55,11 +55,11 @@ class CrawlerEtufor(Crawler):
         return 'name_social', 'cia', 'name', 'name_monther', 'birthday_day', 'birthday_month', 'birthday_year', 'last_school_name'
 
     @staticmethod
-    def primitive_required():
-        return 'primitive_person', 'primitive_firm'
+    def entity_required():
+        return 'entity_person', 'entity_firm'
 
     @classmethod
-    def harvest(cls, primitive_person=None, dependencies=None):
+    def harvest(cls, entity_person=None, dependencies=None):
         phantom = webdriver.PhantomJS()
 
         phantom.get('http://www.etufor.ce.gov.br/index_novo.asp?pagina=sit_carteira2007.asp')
@@ -89,7 +89,7 @@ class CrawlerEtufor(Crawler):
 
         regexp_date = re.compile(r'(\d+)\/(\d+)\/(\d+)')
         birthday_day, birthday_month, birthday_year = regexp_date.search(get_text_in_table(10)).groups()
-        cls.db.update_primitive_row({'name_social': get_text_in_table(9), 'birthday_day': birthday_day, 'birthday_month': birthday_month, 'birthday_year': birthday_year})
+        cls.db.update_entity_row({'name_social': get_text_in_table(9), 'birthday_day': birthday_day, 'birthday_month': birthday_month, 'birthday_year': birthday_year})
         cls.update_my_table({'cia': get_text_in_table(6)})
 
         cls.update_crawler_status(True)
@@ -103,7 +103,7 @@ class CrawlerEtufor(Crawler):
             # não há mais dados a serem colhidos
             return
 
-        cls.db.update_primitive_row({'name_monther': get_text_in_table(16)})
+        cls.db.update_entity_row({'name_monther': get_text_in_table(16)})
 
         regexp_timestamp = re.compile(r'(\d+)\/(\d+)\/(\d+)\s(\d+):(\d+):(\d+)')
         pos = 37
@@ -120,7 +120,7 @@ class CrawlerEtufor(Crawler):
             cls.update_my_table(
                 {
                     'timestamp': timestamp_iso,
-                    'primitive_firm_id_school': cls.db.update_primitive_row({'administration': school_type}, primitive_filter={'nome_fantasia': school}, primitive_name='primitive_firm'),
+                    'entity_firm_id_school': cls.db.update_entity_row({'administration': school_type}, entity_filter={'nome_fantasia': school}, entity_name='entity_firm'),
                     'course': course,
                     'turn': turn
                 }, table='records_school')

@@ -1,8 +1,8 @@
 <crawler>
-    <primitive_required>
-        <primitive type_requirement="harvest">person</primitive>
-        <primitive type_requirement="harvest">firm</primitive>
-    </primitive_required>
+    <entity_required>
+        <entity type_requirement="harvest">person</entity>
+        <entity type_requirement="harvest">firm</entity>
+    </entity_required>
 
     <database>
         <table_main>

@@ -7,11 +7,11 @@ from selenium import webdriver
 class CrawlerQSelecao(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_person_id INTEGER'
+                            'entity_person_id INTEGER'
                         ');' % self.name())
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                        'primitive_person_id INTEGER,'
+                        'entity_person_id INTEGER,'
                         'name_public_tender TEXT,'
                         'course TEXT'
                         ');' % (self.name() + '_public_tender'))
@@ -69,8 +69,8 @@ class CrawlerQSelecao(Crawler):
             time.sleep(3600 * 24 * 30)
 
     @staticmethod
-    def primitive_required():
-        return 'primitive_person',
+    def entity_required():
+        return 'entity_person',
 
     # salva no banco todos dados de todos os candidatos de todos os concursos ou do concurso especificado
     @classmethod
@@ -166,14 +166,14 @@ class CrawlerQSelecao(Crawler):
                 # há casos a serem lidados como em http://qselecao.ifce.edu.br/cartao_identificacao_dinamico.aspx?idcandidatoconcurso=328680&etapa=1
                 infos['identity'] = people_identity
 
-            primitive_id = cls.db.update_primitive_row(infos, primitive_filter={'name': people_name}, primitive_name='primitive_person')
+            entity_id = cls.db.update_entity_row(infos, entity_filter={'name': people_name}, entity_name='entity_person')
 
             try:
-                cls.update_my_table({}, primitive_id=primitive_id, primitive_name='primitive_person')
+                cls.update_my_table({}, entity_id=entity_id, entity_name='entity_person')
             except:
                 pass
-            cls.update_my_table({'name_public_tender': publicTender, 'course': course}, table='public_tender', primitive_id=primitive_id, primitive_name='primitive_person')
-            cls.update_crawler_status(True, primitive_id=primitive_id, primitive_name='primitive_person')
+            cls.update_my_table({'name_public_tender': publicTender, 'course': course}, table='public_tender', entity_id=entity_id, entity_name='entity_person')
+            cls.update_crawler_status(True, entity_id=entity_id, entity_name='entity_person')
 
         if specifc_concurso is None:
             target = crawler_all_qselecao_concursos()

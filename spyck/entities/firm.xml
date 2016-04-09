@@ -1,4 +1,4 @@
-<primitive>
+<entity>
     <column>
         <name>cnpj</name>
         <type>TEXT</type>
@@ -19,4 +19,4 @@
         <name>administration</name>
         <type>TEXT</type>
     </column>
-</primitive>
+</entity>

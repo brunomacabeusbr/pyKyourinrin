@@ -1,7 +1,7 @@
 <crawler>
-    <primitive_required>
-        <primitive type_requirement="harvest">news</primitive>
-    </primitive_required>
+    <entity_required>
+        <entity type_requirement="harvest">news</entity>
+    </entity_required>
 
     <database>
         <table_main>

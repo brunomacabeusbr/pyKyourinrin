@@ -16,9 +16,9 @@
 <!-- se na busca obtiver só um resultado, irá direto para o processo, e não para lista -->
 
 <crawler>
-    <primitive_required>
-        <primitive type_requirement="harvest">person</primitive>
-    </primitive_required>
+    <entity_required>
+        <entity type_requirement="harvest">person</entity>
+    </entity_required>
 
     <database>
         <table_main>
@@ -49,7 +49,7 @@
             </column>
             <column>
                 <name>juiz</name>
-                <type primitive="">person</type>
+                <type entity="">person</type>
             </column>
             <column>
                 <name>valor_acao</name>
@@ -78,7 +78,7 @@
             </column>
             <column>
                 <name>parte_name</name>
-                <type>TEXT</type> <!-- todo: o ideal seria que aqui fosse uma referência para primitive id de person ou então de empresa; pode ser um ou outro -->
+                <type>TEXT</type> <!-- todo: o ideal seria que aqui fosse uma referência para entity id de person ou então de empresa; pode ser um ou outro -->
             </column>
         </table_secondary>
 
@@ -91,7 +91,7 @@
             </column>
             <column>
                 <name>justiciario_name</name>
-                <type primitive="">person</type>
+                <type entity="">person</type>
             </column>
         </table_secondary>
 

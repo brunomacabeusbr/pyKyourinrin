@@ -1,4 +1,4 @@
-<primitive>
+<entity>
     <column>
         <name>name</name>
         <type>TEXT</type>
@@ -31,4 +31,4 @@
         <name>name_monther</name>
         <type>TEXT</type>
     </column>
-</primitive>
+</entity>

@@ -6,18 +6,18 @@ import re
 class CrawlerAylienConcept(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_news_id INTEGER'
+                            'entity_news_id INTEGER'
                         ');' % self.name())
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_news_id INTEGER,'
+                            'entity_news_id INTEGER,'
                             'reference INTEGER PRIMARY KEY AUTOINCREMENT,'
                             'name TEXT,'
                             'name_url TEXT'
                         ');' % (self.name() + '_mentioned'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_news_id INTEGER,'
+                            'entity_news_id INTEGER,'
                             'reference_mentioned INTEGER,'
                             'word_type TEXT,'
                             'word_type_url TEXT,'
@@ -25,7 +25,7 @@ class CrawlerAylienConcept(Crawler):
                         ');' % (self.name() + '_mentioned_types', self.name() + '_mentioned'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_news_id INTEGER,'
+                            'entity_news_id INTEGER,'
                             'reference_mentioned INTEGER,'
                             'name_at_article TEXT,'
                             'FOREIGN KEY(reference_mentioned) REFERENCES %s(reference_mentioned)'
@@ -52,11 +52,11 @@ class CrawlerAylienConcept(Crawler):
         return 'concept_quotes',
 
     @staticmethod
-    def primitive_required():
-        return 'primitive_news',
+    def entity_required():
+        return 'entity_news',
 
     @classmethod
-    def harvest(cls, primitive_news=None, dependencies=None):
+    def harvest(cls, entity_news=None, dependencies=None):
         # http://docs.aylien.com/docs/concepts
 
         client = textapi.Client('71085b2c', '9a69067df3c7f538060fedac9c1adbc0')

@@ -1,9 +1,9 @@
 <maltego_config>
-    <primitive_icons>
-        <primitive name="person">AdultMale</primitive>
-        <primitive name="firm">Company</primitive>
-        <primitive name="cellphone">MobilePhoneGolden</primitive>
-        <primitive name="news">Document</primitive>
-        <primitive name="licitacao">Document</primitive>
-    </primitive_icons>
+    <entity_icons>
+        <entity name="person">AdultMale</entity>
+        <entity name="firm">Company</entity>
+        <entity name="cellphone">MobilePhoneGolden</entity>
+        <entity name="news">Document</entity>
+        <entity name="licitacao">Document</entity>
+    </entity_icons>
 </maltego_config>

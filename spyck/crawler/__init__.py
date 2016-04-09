@@ -21,34 +21,34 @@ class Crawler:
         return ()
 
     @classmethod
-    def update_my_table(cls, column_and_value, table=None, primitive_id=None, primitive_name=None):
-        # Verificação a respeito das variáveis temporárias que armazenam a primitive_id e primitive_name
-        if hasattr(cls, 'temp_current_primitive_name'):
+    def update_my_table(cls, column_and_value, table=None, entity_id=None, entity_name=None):
+        # Verificação a respeito das variáveis temporárias que armazenam a entity_id e entity_name
+        if hasattr(cls, 'temp_current_entity_name'):
             # Se elas estiverem presente, então, usará as variáveis temporárias;
             # por conta de crawler como o portal_transparencia, pode ser útil passa-la de forma redudante para esse método,
             # e precisamos apenas verificar se o valor redudante está correto, para evitar erros do crawler querer atualizar
             # uma primitiva row não passada ao crawler
-            if (primitive_id is not None or primitive_name is not None) and\
-                    (primitive_id != cls.temp_current_primitive_id or primitive_name != cls.temp_current_primitive_name):
+            if (entity_id is not None or entity_name is not None) and\
+                    (entity_id != cls.temp_current_entity_id or entity_name != cls.temp_current_entity_name):
                 raise ValueError('Os valores passados estão diferentes do esperado')
 
-            primitive_id = cls.temp_current_primitive_id
-            primitive_name = cls.temp_current_primitive_name
+            entity_id = cls.temp_current_entity_id
+            entity_name = cls.temp_current_entity_name
         else:
-            # Se as variáveis temporárias não estiverem presente, então o crawler não recebeu como parâmetro uma primitive row
-            # e agora está precisando editar alguma primitive row
-            # Então esse método precisa receber os parâmetros que identificam uma primitive row
-            if primitive_id is None or primitive_name is None:
-                raise ValueError('É necessário fornecer o parâmetro "primitive_id" e "primitive_name",'
-                                 'uma vez em que esse crawler não recebeu como parâmetro um id de primitive')
+            # Se as variáveis temporárias não estiverem presente, então o crawler não recebeu como parâmetro uma entity row
+            # e agora está precisando editar alguma entity row
+            # Então esse método precisa receber os parâmetros que identificam uma entity row
+            if entity_id is None or entity_name is None:
+                raise ValueError('É necessário fornecer o parâmetro "entity_id" e "entity_name",'
+                                 'uma vez em que esse crawler não recebeu como parâmetro um id de entity')
 
-        if primitive_name not in Crawler.temp_current_crawler.primitive_required():
-            raise ValueError('A primitive que você está tentando acessar, "{}", não está listada entre as requeridas pelo crawler'.format(primitive_name))
+        if entity_name not in Crawler.temp_current_crawler.entity_required():
+            raise ValueError('A entity que você está tentando acessar, "{}", não está listada entre as requeridas pelo crawler'.format(entity_name))
 
         # Salvar no banco
         if table is None:
             table = cls.name()
-            if Crawler.db.execute("SELECT COUNT(*) FROM " + table + " WHERE " + primitive_name + "_id=?", (primitive_id,)).fetchone()[0] > 0:
+            if Crawler.db.execute("SELECT COUNT(*) FROM " + table + " WHERE " + entity_name + "_id=?", (entity_id,)).fetchone()[0] > 0:
                 raise ValueError("Já há registro disso na tabela principal do crawler")
         else:
             table = cls.name() + '_' + table
@@ -56,40 +56,40 @@ class Crawler:
         column_and_value = {i: j for i, j in column_and_value.items() if j is not None}
         if len(column_and_value) > 0:
             Crawler.db.execute(
-                "INSERT INTO " + table + " (" + primitive_name + "_id," + ','.join(column_and_value.keys()) + ") "
+                "INSERT INTO " + table + " (" + entity_name + "_id," + ','.join(column_and_value.keys()) + ") "
                 "VALUES (?," + ("'" + "','".join([str(current_value).replace("'", "''") for current_value in column_and_value.values()]) + "'") + ")",
-                (primitive_id,)
+                (entity_id,)
             )
         else:
             Crawler.db.execute(
-                "INSERT INTO " + table + " (" + primitive_name + "_id) VALUES (?)",
-                (primitive_id,)
+                "INSERT INTO " + table + " (" + entity_name + "_id) VALUES (?)",
+                (entity_id,)
             )
 
     @classmethod
-    def update_crawler_status(cls, status, primitive_id=None, primitive_name=None):
-        # Verificação a respeito das variáveis temporárias que armazenam a primitive_id e primitive_name
+    def update_crawler_status(cls, status, entity_id=None, entity_name=None):
+        # Verificação a respeito das variáveis temporárias que armazenam a entity_id e entity_name
         # todo: código repetido com o método "update_my_table" (dica: lá tá comentanda essa bagunça daqui)
-        if hasattr(cls, 'temp_current_primitive_name') and primitive_name is None:
-            if (primitive_id is not None or primitive_name is not None) and\
-                    (primitive_id != cls.temp_current_primitive_id or primitive_name != cls.temp_current_primitive_name):
+        if hasattr(cls, 'temp_current_entity_name') and entity_name is None:
+            if (entity_id is not None or entity_name is not None) and\
+                    (entity_id != cls.temp_current_entity_id or entity_name != cls.temp_current_entity_name):
                 raise ValueError('Os valores passados estão diferentes do esperado')
 
-            primitive_id = cls.temp_current_primitive_id
-            primitive_name = cls.temp_current_primitive_name
+            entity_id = cls.temp_current_entity_id
+            entity_name = cls.temp_current_entity_name
         else:
-            if primitive_id is None or primitive_name is None:
-                raise ValueError('É necessário fornecer o parâmetro "primitive_id" e "primitive_name",'
-                                 'uma vez em que esse crawler não recebeu como parâmetro um id de primitive')
+            if entity_id is None or entity_name is None:
+                raise ValueError('É necessário fornecer o parâmetro "entity_id" e "entity_name",'
+                                 'uma vez em que esse crawler não recebeu como parâmetro um id de entity')
 
-        if primitive_name not in Crawler.temp_current_crawler.primitive_required():
-            raise ValueError('A primitive que você está tentando acessar, "{}", não está listada entre as requeridas pelo crawler'.format(primitive_name))
+        if entity_name not in Crawler.temp_current_crawler.entity_required():
+            raise ValueError('A entity que você está tentando acessar, "{}", não está listada entre as requeridas pelo crawler'.format(entity_name))
 
         # Salvar no banco
         status = (-1, 1)[status]
         Crawler.db.execute(
-            "UPDATE %s_crawler SET %s = ? WHERE id=?" % (primitive_name, Crawler.temp_current_crawler.name()),
-            (status, primitive_id,)
+            "UPDATE %s_crawler SET %s = ? WHERE id=?" % (entity_name, Crawler.temp_current_crawler.name()),
+            (status, entity_id,)
         )
 
     @staticmethod
@@ -110,7 +110,7 @@ class Crawler:
 
     @staticmethod
     @abstractmethod
-    def primitive_required(): pass
+    def entity_required(): pass
 
     @classmethod
     def trigger(cls, table_row): pass
@@ -160,28 +160,28 @@ class GetDependencies:
         self.multiple_dependence_routes = (type(self.dependencies[0]) == tuple)
 
     def __call__(self, *args, **kwargs):
-        arg_primitive = [i for i in kwargs.keys() if i[:9] == 'primitive']
+        arg_entity = [i for i in kwargs.keys() if i[:6] == 'entity']
 
-        # Caso não seja usado um id de primitive, logo não há dependências a serem puxadas,
+        # Caso não seja usado um id de entity, logo não há dependências a serem puxadas,
         # então prosseguirá normalmente para a função harvest do crawler, se o crawler esperar por isso
-        if len(arg_primitive) == 0:
+        if len(arg_entity) == 0:
             self.harvest(*args, **kwargs)
             return
 
         # Checar erro na passagem da primitiva
-        if len(arg_primitive) > 1:
-            raise ValueError('Só é possível passar um único id de primitive!\n')
+        if len(arg_entity) > 1:
+            raise ValueError('Só é possível passar um único id de entity!\n')
 
-        primitive_name = arg_primitive[0]
+        entity_name = arg_entity[0]
         import inspect
         harvest_args = inspect.getargspec(self.harvest).args
 
-        if primitive_name not in harvest_args:
+        if entity_name not in harvest_args:
             raise ValueError('Primitiva não requerida na chamada desse crawler!')
 
         # Recolher dependências
-        primitive_id = kwargs[primitive_name]
-        crawler_list_used = list(Crawler.db.crawler_list_used(primitive_id, primitive_name[10:]))
+        entity_id = kwargs[entity_name]
+        crawler_list_used = list(Crawler.db.crawler_list_used(entity_id, entity_name[7:]))
 
         if self.multiple_dependence_routes:
             # Se houver várias rotas de depedência, seguirá o seguinte algorítimo:
@@ -190,9 +190,9 @@ class GetDependencies:
             # 3 - Prioriza a rota com menos depedências
             dict_dependencies = None
             for i in self.dependencies:
-                current_dict_dependencies = Crawler.db.get_dependencies(primitive_id, primitive_name[10:], *i)
+                current_dict_dependencies = Crawler.db.get_dependencies(entity_id, entity_name[7:], *i)
 
-                # Se o retorno de get_dependencies for false, então há dependências não pertecente à essa primitive,
+                # Se o retorno de get_dependencies for false, então há dependências não pertecente à essa entity,
                 # logo, devemos ignorar essa rota de dependência
                 if current_dict_dependencies is False:
                     continue
@@ -229,7 +229,7 @@ class GetDependencies:
             if dict_dependencies is None:
                 return False
         else:
-            dict_dependencies = Crawler.db.get_dependencies(primitive_id, primitive_name[10:], *self.dependencies)
+            dict_dependencies = Crawler.db.get_dependencies(entity_id, entity_name[7:], *self.dependencies)
 
         # Verificar se alguma dependência não está presente no banco
         # Se não estiver, então vai colhe-la e chamar novamente esse mesmo método
@@ -243,9 +243,9 @@ class GetDependencies:
                     if i.name() in crawler_list_used or i in kwargs['crawlers_tried']:
                         continue
 
-                    # verificar se esse crawler pode usar essa primitive
+                    # verificar se esse crawler pode usar essa entity
                     harvest_args = inspect.getargspec(i.harvest_debug).args
-                    if primitive_name not in harvest_args:
+                    if entity_name not in harvest_args:
                         continue
 
                     # adicionar à lita de crawlers já tentados, para evitar loop infinito
@@ -262,15 +262,15 @@ class GetDependencies:
             del kwargs['crawlers_tried']
 
         # "Passar" de forma implícita variáveis temporárias ao Crawler, úteis na hora de salvar as infos no banco de dados
-        Crawler.temp_current_primitive_name = primitive_name
-        Crawler.temp_current_primitive_id = primitive_id
+        Crawler.temp_current_entity_name = entity_name
+        Crawler.temp_current_entity_id = entity_id
 
         # Colher
         self.harvest(*args, dependencies=dict_dependencies, **kwargs)
 
         # Após a colheita, para evitar problemas, apagará as variáveis temporárias
-        del Crawler.temp_current_primitive_name
-        del Crawler.temp_current_primitive_id
+        del Crawler.temp_current_entity_name
+        del Crawler.temp_current_entity_id
 
 def encapsulate_harvest(crawler_and_harvest, *args, **kwargs):
     # "Passar" de forma implícita variável temporária ao Crawler, útil na hora de salvar as infos no banco de dados

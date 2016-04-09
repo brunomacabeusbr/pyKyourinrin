@@ -5,28 +5,28 @@ from selenium import webdriver
 class CrawlerEsaj(Crawler):
     def create_my_table(self):
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_person_id INTEGER,'
-                            'primitive_firm_id INTEGER'
+                            'entity_person_id INTEGER,'
+                            'entity_firm_id INTEGER'
                         ');' % self.name())
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_person_id INTEGER,'
-                            'primitive_firm_id INTEGER,'
+                            'entity_person_id INTEGER,'
+                            'entity_firm_id INTEGER,'
                             'reference INTEGER PRIMARY KEY AUTOINCREMENT,'
                             'processo_number TEXT,'
                             'processo_grau TEXT,'
                             'classe TEXT,'
                             'classe_area TEXT,'
                             'assunto TEXT,'
-                            'primitive_person_id_juiz INTEGER,'
+                            'entity_person_id_juiz INTEGER,'
                             'valor_acao FLOAT,'
                             'url TEXT,'
-                            'FOREIGN KEY(primitive_person_id_juiz) REFERENCES primitive_person(id)'
+                            'FOREIGN KEY(entity_person_id_juiz) REFERENCES entity_person(id)'
                         ');' % (self.name() + '_processo'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_person_id INTEGER,'
-                            'primitive_firm_id INTEGER,'
+                            'entity_person_id INTEGER,'
+                            'entity_firm_id INTEGER,'
                             'reference_processo INTEGER,'
                             'reference INTEGER PRIMARY KEY AUTOINCREMENT,'
                             'principal INTEGER,'
@@ -37,18 +37,18 @@ class CrawlerEsaj(Crawler):
                         ');' % (self.name() + '_partes', self.name() + '_processo'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_person_id INTEGER,'
-                            'primitive_firm_id INTEGER,'
+                            'entity_person_id INTEGER,'
+                            'entity_firm_id INTEGER,'
                             'reference_partes INTEGER,'
                             'justiciario_type TEXT,'
-                            'primitive_person_id_justiciario_name INTEGER,'
+                            'entity_person_id_justiciario_name INTEGER,'
                             'FOREIGN KEY(reference_partes) REFERENCES %s(reference_partes),'
-                            'FOREIGN KEY(primitive_person_id_justiciario_name) REFERENCES primitive_person(id)'
+                            'FOREIGN KEY(entity_person_id_justiciario_name) REFERENCES entity_person(id)'
                         ');' % (self.name() + '_partes_justiciario', self.name() + '_partes'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_person_id INTEGER,'
-                            'primitive_firm_id INTEGER,'
+                            'entity_person_id INTEGER,'
+                            'entity_firm_id INTEGER,'
                             'reference_processo INTEGER,'
                             'data_day INTEGER,'
                             'data_month INTEGER,'
@@ -59,8 +59,8 @@ class CrawlerEsaj(Crawler):
                         ');' % (self.name() + '_movimentacoes', self.name() + '_processo'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_person_id INTEGER,'
-                            'primitive_firm_id INTEGER,'
+                            'entity_person_id INTEGER,'
+                            'entity_firm_id INTEGER,'
                             'reference_processo INTEGER,'
                             'data_day INTEGER,'
                             'data_month INTEGER,'
@@ -70,8 +70,8 @@ class CrawlerEsaj(Crawler):
                         ');' % (self.name() + '_peticoes', self.name() + '_processo'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_person_id INTEGER,'
-                            'primitive_firm_id INTEGER,'
+                            'entity_person_id INTEGER,'
+                            'entity_firm_id INTEGER,'
                             'reference_processo INTEGER,'
                             'data_day INTEGER,'
                             'data_month INTEGER,'
@@ -82,8 +82,8 @@ class CrawlerEsaj(Crawler):
                         ');' % (self.name() + '_incidentes', self.name() + '_processo'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_person_id INTEGER,'
-                            'primitive_firm_id INTEGER,'
+                            'entity_person_id INTEGER,'
+                            'entity_firm_id INTEGER,'
                             'reference_processo INTEGER,'
                             'data_day INTEGER,'
                             'data_month INTEGER,'
@@ -95,8 +95,8 @@ class CrawlerEsaj(Crawler):
                         ');' % (self.name() + '_audiencia', self.name() + '_processo'))
 
         self.db.execute('CREATE TABLE IF NOT EXISTS %s('
-                            'primitive_person_id INTEGER,'
-                            'primitive_firm_id INTEGER,'
+                            'entity_person_id INTEGER,'
+                            'entity_firm_id INTEGER,'
                             'reference_processo INTEGER,'
                             'documento TEXT,'
                             'numero TEXT,'
@@ -133,15 +133,15 @@ class CrawlerEsaj(Crawler):
                         continue
 
                     for l in j['partes_justiciario']:
-                        if l['primitive_person_id_justiciario_name'] not in added:
-                            added.append(l['primitive_person_id_justiciario_name'])
+                        if l['entity_person_id_justiciario_name'] not in added:
+                            added.append(l['entity_person_id_justiciario_name'])
                             to_return.append({
-                                'primitive_person_id_aliado_justiciario': l['primitive_person_id_justiciario_name'],
+                                'entity_person_id_aliado_justiciario': l['entity_person_id_justiciario_name'],
                                 'justiciario_type': l['justiciario_type'], 'justiciario_count': 1
                             })
                         else:
                             for i in to_return:
-                                if i['primitive_person_id_aliado_justiciario'] != l['primitive_person_id_justiciario_name']:
+                                if i['entity_person_id_aliado_justiciario'] != l['entity_person_id_justiciario_name']:
                                     continue
 
                                 i['justiciario_count'] = i['justiciario_count'] + 1
@@ -180,11 +180,11 @@ class CrawlerEsaj(Crawler):
         return 'aliados_juridicos', 'processos'
 
     @staticmethod
-    def primitive_required():
-        return 'primitive_person', 'primitive_firm'
+    def entity_required():
+        return 'entity_person', 'entity_firm'
 
     @classmethod
-    def harvest(cls, primitive_person=None, primitive_firm=None, dependencies=None):
+    def harvest(cls, entity_person=None, entity_firm=None, dependencies=None):
         phantom = webdriver.PhantomJS(service_args=['--ignore-ssl-errors=true'])
 
         # todo: por enquanto, só recolhe processos do primeiro grau; implementar para colher de segundo grau também?
@@ -280,7 +280,7 @@ class CrawlerEsaj(Crawler):
                 'classe': classe,
                 'classe_area': classe_area,
                 'assunto': assunto,
-                'primitive_person_id_juiz': cls.db.update_primitive_row({}, primitive_filter={'name': juiz}, primitive_name='primitive_person'),
+                'entity_person_id_juiz': cls.db.update_entity_row({}, entity_filter={'name': juiz}, entity_name='entity_person'),
                 'valor_acao': valor_acao,
                 'url': url}, table='processo'
             )
@@ -321,7 +321,7 @@ class CrawlerEsaj(Crawler):
                         #   "Defensor P" -> Defensor Público
                         cls.update_my_table({
                             'justiciario_type': justiciario_type,
-                            'primitive_person_id_justiciario_name': cls.db.update_primitive_row({}, primitive_filter={'name': justiciario_name.strip().title()}, primitive_name='primitive_person'),
+                            'entity_person_id_justiciario_name': cls.db.update_entity_row({}, entity_filter={'name': justiciario_name.strip().title()}, entity_name='entity_person'),
                             'reference_partes': reference_partes
                         }, table='partes_justiciario')
             else:
@@ -344,7 +344,7 @@ class CrawlerEsaj(Crawler):
                         justiciario_type, justiciario_name = i.split(': ')
                         cls.update_my_table({
                             'justiciario_type': justiciario_type,
-                            'primitive_person_id_justiciario_name': cls.db.update_primitive_row({}, primitive_filter={'name': justiciario_name.strip().title()}, primitive_name='primitive_person'),
+                            'entity_person_id_justiciario_name': cls.db.update_entity_row({}, entity_filter={'name': justiciario_name.strip().title()}, entity_name='entity_person'),
                             'reference_partes': reference_partes
                         }, table='partes_justiciario')
 

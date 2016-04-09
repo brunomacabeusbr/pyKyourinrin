@@ -1,4 +1,4 @@
-<primitive>
+<entity>
     <column>
         <name>title</name>
         <type>TEXT</type>
@@ -27,4 +27,4 @@
         <name>url</name>
         <type>TEXT</type>
     </column>
-</primitive>
+</entity>
