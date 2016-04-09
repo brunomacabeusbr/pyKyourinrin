@@ -6,8 +6,8 @@ import inspect
 class ManagerDatabase:
     def __init__(self, trigger=True):
         import os
-        path_pykyourinrin = os.path.dirname(__file__)
-        self.con = sqlite3.connect(path_pykyourinrin + '/mydatabase.db', check_same_thread=False)
+        path_spyck = os.path.dirname(__file__)
+        self.con = sqlite3.connect(path_spyck + '/mydatabase.db', check_same_thread=False)
 
         self.c = self.con.cursor()
 
@@ -31,7 +31,7 @@ class ManagerDatabase:
         # criar tabelas das primitives com base nos xml
         import xml.etree.ElementTree as ET
 
-        for current_xml in os.listdir(path_pykyourinrin + '/primitives/'):
+        for current_xml in os.listdir(path_spyck + '/primitives/'):
             xml_root = ET.parse('primitives/' + current_xml).getroot()
             columns = [(current_xml.find('name').text, current_xml.find('type').text) for current_xml in xml_root.findall('column')]
 

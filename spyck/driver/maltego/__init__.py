@@ -1,5 +1,16 @@
 import sys
 
+# por alguma razão, PRECISA ter o java 1.7
+# sudo apt-get install oracle-java7-installer
+# sudo apt-get install oracle-java7-set-default
+# e se quiser trocar depois a versão
+# update-alternatives --config java
+
+# todo
+#  pegar o fork do paolo https://github.com/brunomacabeusbr/casefile-extender
+#  e começar a jogar as minhas coisas nele, documentar tudo em inglês, colocar manual do pyKyourinrin no macalogs para depois traduzir para o inglês
+
+
 # Precisamos garantir que todos os módulos do pyKyourinrin serão carregados
 # e não serão afetados pelo working directory em que for ser executado o script
 # todo: talvez exista um método mais elegante de se fazer isso
@@ -17,7 +28,7 @@ sys.path.append(folder_pyKyourinrin + '/crawler')
 #
 DEBUG = False # coloque True para ver o parâmetro que o Maltego manda para cá através de um transform
 
-import pyKyourinrin.driver.maltego.lib_files
+import spyck.driver.maltego.lib_files
 
 def execute_crawler():
     if 'populator_crawler' in args.keys():
@@ -41,7 +52,7 @@ def execute_crawler():
 
         mm = lib_files.MaltegoMessage()
         for primitive_id, primitive_name in list_primitive_row:
-            x = mm.add_entity('pykyourinrin.{}'.format(primitive_name[10:]), value=Crawler.db.execute('SELECT * FROM ' + primitive_name + ' WHERE id=?', (primitive_id,)).fetchone()[1])
+            x = mm.add_entity('spyck.{}'.format(primitive_name[10:]), value=Crawler.db.execute('SELECT * FROM ' + primitive_name + ' WHERE id=?', (primitive_id,)).fetchone()[1])
             x.add_additional_fields('table_id', primitive_id)
             x.add_additional_fields('primitive_name', primitive_name[10:])
         mm.show()
@@ -62,14 +73,14 @@ def get_info_all():
 
         if k[:9] == 'primitive':
             primitive_name = k.split('_', 3)
-            x = mm.add_entity('pykyourinrin.' + primitive_name, value='{}: {} id {}'.format(primitive_name[-1]. primitive_name[1], v))
+            x = mm.add_entity('spyck.' + primitive_name, value='{}: {} id {}'.format(primitive_name[-1]. primitive_name[1], v))
             x.add_additional_fields('table_id', v)
             x.add_additional_fields('primitive_name', primitive_name[1])
         elif type(v) is list:
-            x = mm.add_entity('pykyourinrin.info_list', value='{} from {} {}: {} sub-itens'.format(k, args['primitive_name'], args['table_id'], len(v)))
+            x = mm.add_entity('spyck.info_list', value='{} from {} {}: {} sub-itens'.format(k, args['primitive_name'], args['table_id'], len(v)))
             x.add_additional_fields('dict_path', "['" + k + "']")
         else:
-            x = mm.add_entity('pykyourinrin.info', value='{}: {}'.format(k, v))
+            x = mm.add_entity('spyck.info', value='{}: {}'.format(k, v))
 
         x.add_additional_fields('from_primitive_id', args['table_id'])
         x.add_additional_fields('from_primitive_name', args['primitive_name'])
@@ -84,7 +95,7 @@ def unpack_list():
 
     if type(infos) is list:
         for i in range(len(infos)):
-            x = mm.add_entity('pykyourinrin.info_list', value='sub-iten {} from {} by {} {}'.format(i, args['dict_path'], args['from_primitive_name'], args['from_primitive_id']))
+            x = mm.add_entity('spyck.info_list', value='sub-iten {} from {} by {} {}'.format(i, args['dict_path'], args['from_primitive_name'], args['from_primitive_id']))
             x.add_additional_fields('dict_path', args['dict_path'] + '[' + str(i) + ']')
             x.add_additional_fields('from_primitive_id', args['from_primitive_id'])
             x.add_additional_fields('from_primitive_name', args['from_primitive_name'])
@@ -94,16 +105,16 @@ def unpack_list():
                 continue
 
             if type(v) is list:
-                x = mm.add_entity('pykyourinrin.info_list', value='{} from {} by {} {}'.format(k, args['dict_path'], args['from_primitive_name'], args['from_primitive_id']))
+                x = mm.add_entity('spyck.info_list', value='{} from {} by {} {}'.format(k, args['dict_path'], args['from_primitive_name'], args['from_primitive_id']))
                 x.add_additional_fields('dict_path', args['dict_path'] + "['" + k + "']")
             else:
                 if k[:9] == 'primitive':
                     primitive_name = k.split('_', 3)
-                    x = mm.add_entity('pykyourinrin.' + primitive_name[1], value='{}: {} id {}'.format(primitive_name[-1], primitive_name[1], v))
+                    x = mm.add_entity('spyck.' + primitive_name[1], value='{}: {} id {}'.format(primitive_name[-1], primitive_name[1], v))
                     x.add_additional_fields('table_id', v)
                     x.add_additional_fields('primitive_name', primitive_name[1])
                 else:
-                    x = mm.add_entity('pykyourinrin.info', value='{}: {}'.format(k, v))
+                    x = mm.add_entity('spyck.info', value='{}: {}'.format(k, v))
 
             x.add_additional_fields('from_primitive_id', args['from_primitive_id'])
             x.add_additional_fields('from_primitive_name', args['from_primitive_name'])
@@ -141,8 +152,8 @@ def generate_files():
     dir_save_files = maltego_folder + '/com/paterva/maltego/entities/common/'
     os.makedirs(dir_save_files)
 
-    if not os.path.exists(dir_save_files + 'pykyourinrin'):
-        os.makedirs(dir_save_files + 'pykyourinrin')
+    if not os.path.exists(dir_save_files + 'spyck'):
+        os.makedirs(dir_save_files + 'spyck')
 
     me = lib_files.MaltegoEntity(dir_save_files)
 
@@ -231,12 +242,12 @@ else:
     if DEBUG:
         # coloque True caso queira debugar e ver a mensagem
         mm = lib_files.MaltegoMessage()
-        mm.add_entity('pykyourinrin.info_list', value=' '.join(sys.argv[1:]))
-        mm.add_entity('pykyourinrin.info', value='#'.join(['{}={}'.format(k, v) for k, v in parse_arguments(sys.argv[-1]).items()]))
+        mm.add_entity('spyck.info_list', value=' '.join(sys.argv[1:]))
+        mm.add_entity('spyck.info', value='#'.join(['{}={}'.format(k, v) for k, v in parse_arguments(sys.argv[-1]).items()]))
         mm.show()
         exit()
 
-    from pyKyourinrin.database import ManagerDatabase
+    from spyck.database import ManagerDatabase
     db = ManagerDatabase(trigger=False)
 
     args = None

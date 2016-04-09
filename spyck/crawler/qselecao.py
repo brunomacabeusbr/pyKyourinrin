@@ -180,5 +180,9 @@ class CrawlerQSelecao(Crawler):
         else:
             target = crawler_specific_qselecao_concursos(specifc_concurso)
 
+        total = len(target)
+        x = 0
         for i in target:
+            print(x, '/', total)
+            x += 1
             crawler_specific_qselecao_cartao_identificacao(i)

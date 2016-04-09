@@ -92,7 +92,7 @@ else:
 
     re_get_table_name = re.compile('CREATE TABLE IF NOT EXISTS (.*?)\(')
     re_check_table_name = re.compile(ct_name + '($|_.*$)')
-    re_check_column_personid = re.compile('peopleid INTEGER,.*FOREIGN KEY\(peopleid\) REFERENCES peoples\(id\)')
+    re_check_column_personid = re.compile('peopleid INTEGER,.*FOREIGN KEY\(peopleid\) REFERENCES person\(id\)')
 
     for i in ct.db.get_sql_list():
         table_name = re_get_table_name.search(i).groups()[0]

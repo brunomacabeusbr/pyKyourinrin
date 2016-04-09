@@ -153,7 +153,7 @@ dict_info_to_crawlers = defaultdict(list)
 # para pega-las do banco de dados e colocar no dict 'dependencies' da chamada do método
 class GetDependencies:
     def __init__(self, f):
-        self.f = f
+        self.f = f # todo: na verdade, basta salvar o self.f
         self.name = f.name()
         self.harvest = f.harvest
         self.dependencies = f.dependencies()
