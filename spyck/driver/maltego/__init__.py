@@ -8,10 +8,10 @@ import sys
 
 # todo
 #  pegar o fork do paolo https://github.com/brunomacabeusbr/casefile-extender
-#  e começar a jogar as minhas coisas nele, documentar tudo em inglês, colocar manual do pyKyourinrin no macalogs para depois traduzir para o inglês
+#  e começar a jogar as minhas coisas nele, documentar tudo em inglês, colocar manual do spyck no macalogs para depois traduzir para o inglês
 
 
-# Precisamos garantir que todos os módulos do pyKyourinrin serão carregados
+# Precisamos garantir que todos os módulos do spyck serão carregados
 # e não serão afetados pelo working directory em que for ser executado o script
 # todo: talvez exista um método mais elegante de se fazer isso
 import os
@@ -20,10 +20,10 @@ def path_parent(path):
     return os.path.abspath(os.path.join(path, os.pardir))
 
 folder_this_file = os.path.dirname(os.path.realpath(__file__))
-folder_pyKyourinrin = path_parent(path_parent(folder_this_file))
-sys.path.append(path_parent(folder_pyKyourinrin))
-sys.path.append(folder_pyKyourinrin)
-sys.path.append(folder_pyKyourinrin + '/crawler')
+folder_spyck = path_parent(path_parent(folder_this_file))
+sys.path.append(path_parent(folder_spyck))
+sys.path.append(folder_spyck)
+sys.path.append(folder_spyck + '/crawler')
 
 #
 DEBUG = False # coloque True para ver o parâmetro que o Maltego manda para cá através de um transform
@@ -179,8 +179,8 @@ def generate_files():
         crawler_populator.append(current_crawler)
 
     # primitives
-    for current_xml in os.listdir(folder_pyKyourinrin + '/primitives/'):
-        crawler_root = ET.parse(folder_pyKyourinrin + '/primitives/' + current_xml).getroot()
+    for current_xml in os.listdir(folder_spyck + '/primitives/'):
+        crawler_root = ET.parse(folder_spyck + '/primitives/' + current_xml).getroot()
         current_xml = current_xml[:-4]
         primitives_names.append(current_xml)
 
@@ -200,7 +200,7 @@ def generate_files():
     os.makedirs(dir_save_files)
     os.makedirs(dir_save_files + '/local')
 
-    mt = lib_files.MaltegoTransform('/usr/bin/python3', folder_pyKyourinrin, dir_save_files)
+    mt = lib_files.MaltegoTransform('/usr/bin/python3', folder_spyck, dir_save_files)
 
     # crawler arbitrário get_info_all
     mt.new_transform('get_info_all', [i for i in primitives_names], 'get_info_all')
