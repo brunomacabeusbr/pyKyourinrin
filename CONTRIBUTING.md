@@ -1,7 +1,10 @@
 ## Contributing
 
-Open an [issue](https://github.com/thompsonemerson/zoomove/issues/new) or submit
-a [pull request](https://github.com/zetaresearch/spyck/compare).
+Find on our [roadmap](https://github.com/zetaresearch/spyck#roadmap) the next
+steps of the project :smile:
+
+Then open an [issue](https://github.com/zetaresearch/spyck/issues/new) or
+submit a [pull request](https://github.com/zetaresearch/spyck/compare).
 
 1. Navigate to the main page of the repository
 1. [Fork it!](https://github.com/zetaresearch/spyck#fork-destination-box)
