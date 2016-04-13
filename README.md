@@ -25,3 +25,28 @@
 - [History](#history)
 - [License](#license)
 
+## Purpose
+
+*spyck* is a framework which aims to make it easy to develop crawlers and
+integrate collected data - independent of its type and origin. It's easily
+**expandable** and **adaptable**. It also aims to be easy to use, even for
+beginners.
+
+It can be very useful for a wide variety of cases, e.g.:
+
+- Journalist investigations to find corruption cases - like [this one](http://g1.globo.com/jornal-nacional/noticia/2016/01/hospital-do-rj-tem-medico-no-plantao-que-nao-aparece-para-trabalhar.html);
+- Researching the population of a particular group;
+- Better understanding of a candidate for a job before it hiring
+- *etc.*
+
+## Concepts
+
+During the framework development some words got new meanings:
+
+- **Crawler**: The data collector.
+- **Harvest**: The execution.
+- **Dependencies**: Required previous data.
+
+> Also, each crawler has its *possible-to-achieve* **crop** after the
+**harvest**. Each crawler works in one or more different **entities**, where it
+contextualizes and store the collected data.
