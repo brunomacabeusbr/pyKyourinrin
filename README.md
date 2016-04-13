@@ -50,3 +50,54 @@ During the framework development some words got new meanings:
 > Also, each crawler has its *possible-to-achieve* **crop** after the
 **harvest**. Each crawler works in one or more different **entities**, where it
 contextualizes and store the collected data.
+
+## Requirements
+
+> Everything below can be easily installed via
+[setuptools](https://pypi.python.org/pypi/setuptools).
+
+- python 3.x
+- requests
+- PyPDF2
+- selenium
+- pyslibtesseract
+- aylien-apiclient
+
+The you need to install:
+
+- phantomJS
+
+```sh
+sudo apt-get install phantomjs
+```
+
+## Other Resources
+
+> Relax, some better docs will come soon.
+
+You can find more info about the framework - and get some feed about its
+development through [this blog post](http://macalogs.com.br/spyck-apresentacao-do-framework-de-mineracao-de-dados/).
+
+You can also check the slides from a presentation made at [XI Pylestras](http://pylestras.org/evento/xi-pylestras/)
+about the framework [here](http://zetaresearch.github.io/talks/spyck.pdf).
+
+## Roadmap
+
+- [ ] Simplify the code and make it easier to work on the development of the
+framework itself.
+- [ ] Create a graphical interface (*GUI*) to make it more accessible to
+beginners.
+- [ ] Implement analysis and inferences about the collected data.
+
+## Contributing
+
+Contributions are very welcome! If you'd like to contribute,
+[these guidelines](CONTRIBUTING.md) may help you.
+
+## History
+
+See [Releases](https://github.com/zetaresearch/spyck/releases) for detailed changelog.
+
+## License
+
+[MIT License](LICENSE.md) © ZETA Research.
