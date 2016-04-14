@@ -24,7 +24,7 @@
             </column>
             <column>
                 <name>workplace</name>
-                <type entity="">firm</type>
+                <entity>firm</entity>
             </column>
             <column>
                 <name>working_hours</name>
@@ -79,7 +79,6 @@
     </crop>
 
     <harvest>
-        <url>http://www.portaltransparencia.gov.br/servidores/Servidor-ListaServidores.asp</url>
         <param_additional>specific_name</param_additional>
         <param_additional>specific_siteid</param_additional>
     </harvest>

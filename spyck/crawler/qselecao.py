@@ -28,11 +28,15 @@ class CrawlerQSelecao(Crawler):
 
     @staticmethod
     def dependencies():
-        return '',
+        return None
 
     @staticmethod
     def crop():
         return 'name', 'identity', 'birthday_day', 'birthday_month', 'birthday_year',
+
+    @staticmethod
+    def entity_required():
+        return 'entity_person',
 
     @staticmethod
     def __get_cod_concursos():
@@ -67,10 +71,6 @@ class CrawlerQSelecao(Crawler):
             table_row.update(json.dumps(list_cod_concurso_now))
 
             time.sleep(3600 * 24 * 30)
-
-    @staticmethod
-    def entity_required():
-        return 'entity_person',
 
     # salva no banco todos dados de todos os candidatos de todos os concursos ou do concurso especificado
     @classmethod

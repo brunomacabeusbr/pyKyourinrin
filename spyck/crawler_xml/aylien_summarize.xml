@@ -33,7 +33,6 @@
     </crop>
 
     <harvest>
-        <url></url>
-        <param_additional>total_sentences</param_additional>
+        <param_additional default_type="int" default_value="5">total_sentences</param_additional>
     </harvest>
 </crawler>

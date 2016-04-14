@@ -1,0 +1,36 @@
+<crawler>
+    <entity_required>
+        <entity type_requirement="harvest">person</entity>
+    </entity_required>
+
+    <database>
+        <table_main>
+            <column>
+                <name>voter_registration</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>voter_situation_inscription</name>
+                <type>TEXT</type>
+            </column>
+        </table_main>
+    </database>
+
+    <dependencies>
+        <route>
+            <dependence>name</dependence>
+            <dependence>birthday_day</dependence>
+            <dependence>birthday_month</dependence>
+            <dependence>birthday_year</dependence>
+        </route>
+    </dependencies>
+
+    <crop>
+        <info>voter_registration</info>
+        <info>domicilio_eleitoral</info>
+    </crop>
+
+    <harvest>
+
+    </harvest>
+</crawler>

@@ -20,6 +20,6 @@
     </crop>
 
     <harvest>
-        <url>http://consultanumero.abr.net.br/consultanumero/consulta/consultaSituacaoAtualCtg</url>
+
     </harvest>
 </crawler>

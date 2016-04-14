@@ -18,6 +18,7 @@
 <crawler>
     <entity_required>
         <entity type_requirement="harvest">person</entity>
+        <entity type_requirement="harvest">firm</entity>
     </entity_required>
 
     <database>
@@ -49,7 +50,7 @@
             </column>
             <column>
                 <name>juiz</name>
-                <type entity="">person</type>
+                <entity>person</entity>
             </column>
             <column>
                 <name>valor_acao</name>
@@ -91,7 +92,7 @@
             </column>
             <column>
                 <name>justiciario_name</name>
-                <type entity="">person</type>
+                <entity>person</entity>
             </column>
         </table_secondary>
 
@@ -236,17 +237,11 @@
     </dependencies>
 
     <crop>
-        <info>name_social</info>
-        <info>cia</info>
-        <info>name</info>
-        <info>name_monther</info>
-        <info>birthday_day</info>
-        <info>birthday_month</info>
-        <info>birthday_year</info>
-        <info>last_school_name</info>
+        <info>aliados_juridicos</info>
+        <info>processos</info>
     </crop>
 
     <harvest>
-        <url></url>
+
     </harvest>
 </crawler>

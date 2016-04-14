@@ -20,7 +20,7 @@
             </column>
             <column>
                 <name>school</name>
-                <type entity="">firm</type>
+                <entity>firm</entity>
             </column>
             <column>
                 <name>course</name>
@@ -61,6 +61,6 @@
     </crop>
 
     <harvest>
-        <url>http://www.etufor.ce.gov.br/index_novo.asp?pagina=sit_carteira2007.asp</url>
+
     </harvest>
 </crawler>

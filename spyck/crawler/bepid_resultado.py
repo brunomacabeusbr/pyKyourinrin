@@ -19,7 +19,7 @@ class CrawlerBepidResultado(Crawler):
 
     @staticmethod
     def dependencies():
-        return '',
+        return None
 
     @staticmethod
     def crop():

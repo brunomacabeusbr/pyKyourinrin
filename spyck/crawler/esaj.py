@@ -115,7 +115,8 @@ class CrawlerEsaj(Crawler):
             {'table': 'movimentacoes', 'reference': ('processo',)},
             {'table': 'peticoes', 'reference': ('processo',)},
             {'table': 'incidentes', 'reference': ('processo',)},
-            {'table': 'audiencia', 'reference': ('processo',)}
+            {'table': 'audiencia', 'reference': ('processo',)},
+            {'table': 'dados_delegacia', 'reference': ('processo',)},
         )
 
     @staticmethod

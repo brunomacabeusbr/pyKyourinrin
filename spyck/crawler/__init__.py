@@ -100,10 +100,6 @@ class Crawler:
     @abstractmethod
     def dependencies(): pass
 
-    @classmethod
-    def have_dependencies(cls):
-        return cls.dependencies()[0] != ''
-
     @staticmethod
     @abstractmethod
     def crop(): pass
@@ -144,7 +140,7 @@ dict_info_to_crawlers = defaultdict(list)
     dict_info_to_crawlers[current_crop].append(cls)
 
     for cls in Crawler.__subclasses__()
-    if cls.have_dependencies() is True
+    if cls.dependencies() is not None
 
     for current_crop in cls.crop()
 ]
@@ -292,7 +288,7 @@ import functools
 for i in Crawler.__subclasses__():
     i.harvest_debug = copy.copy(i.harvest) # cópia direta do método harvest, útil em debug ou para pegar o cabeçalho do harvest
 
-    if i.have_dependencies():
+    if i.dependencies() is not None:
         i.harvest = GetDependencies(i)
 
     i.harvest = functools.partial(encapsulate_harvest, (i, i.harvest))

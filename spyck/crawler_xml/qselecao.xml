@@ -5,23 +5,20 @@
 
     <database>
         <table_main>
-            <column>
-                <name>bepid_position</name>
-                <type>INTEGER</type>
-            </column>
-            <column>
-                <name>bepid_score</name>
-                <type>INTEGER</type>
-            </column>
-            <column>
-                <name>bepid_ranked_first</name>
-                <type>INTEGER</type>
-            </column>
-            <column>
-                <name>bepid_ranked_second</name>
-                <type>INTEGER</type>
-            </column>
+
         </table_main>
+
+        <table_secondary>
+            <name>public_tender</name>
+            <column>
+                <name>name_public_tender</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>course</name>
+                <type>TEXT</type>
+            </column>
+        </table_secondary>
     </database>
 
     <dependencies>
@@ -30,12 +27,13 @@
 
     <crop>
         <info>name</info>
+        <info>identity</info>
         <info>birthday_day</info>
         <info>birthday_month</info>
         <info>birthday_year</info>
     </crop>
 
     <harvest>
-
+        <param_additional>specifc_concurso</param_additional>
     </harvest>
 </crawler>

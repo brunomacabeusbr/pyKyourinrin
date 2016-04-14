@@ -1,5 +1,4 @@
 from . import Crawler
-from aylienapiclient import textapi
 
 
 class CrawlerAylienSummarize(Crawler):

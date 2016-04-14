@@ -1,0 +1,69 @@
+<crawler>
+    <entity_required>
+        <entity type_requirement="harvest">person</entity>
+    </entity_required>
+
+    <database>
+        <table_main>
+            <column>
+                <name>voter_registration</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>domicilio_eleitoral_zona</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>domicilio_eleitoral_secao</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>domicilio_eleitoral_local</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>domicilio_eleitoral_edereco</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>domicilio_eleitoral_city</name>
+                <type>TEXT</type>
+            </column>
+            <column>
+                <name>domicilio_eleitoral_state</name>
+                <type>TEXT</type>
+            </column>
+        </table_main>
+
+        <macro_at_data>
+            <name>domicilio_eleitoral</name>
+        </macro_at_data>
+    </database>
+
+    <dependencies>
+        <route>
+            <dependence>name</dependence>
+            <dependence>birthday_day</dependence>
+            <dependence>birthday_month</dependence>
+            <dependence>birthday_year</dependence>
+            <dependence>name_monther</dependence>
+        </route>
+        <route>
+            <dependence>voter_registration</dependence>
+            <dependence>birthday_day</dependence>
+            <dependence>birthday_month</dependence>
+            <dependence>birthday_year</dependence>
+            <dependence>name_monther</dependence>
+        </route>
+    </dependencies>
+
+    <crop>
+        <info>voter_registration</info>
+        <info>name</info>
+        <info>domicilio_eleitoral</info>
+    </crop>
+
+    <harvest>
+
+    </harvest>
+</crawler>
