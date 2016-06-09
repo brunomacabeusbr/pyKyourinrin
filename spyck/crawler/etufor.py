@@ -88,9 +88,9 @@ class CrawlerEtufor(Crawler):
             return
 
         regexp_date = re.compile(r'(\d+)\/(\d+)\/(\d+)')
-        birthday_day, birthday_month, birthday_year = regexp_date.search(get_text_in_table(10)).groups()
-        cls.db.update_entity_row({'name_social': get_text_in_table(9), 'birthday_day': birthday_day, 'birthday_month': birthday_month, 'birthday_year': birthday_year})
-        cls.update_my_table({'cia': get_text_in_table(6)})
+        birthday_day, birthday_month, birthday_year = regexp_date.search(get_text_in_table(11)).groups()
+        cls.db.update_entity_row({'name_social': get_text_in_table(10), 'birthday_day': birthday_day, 'birthday_month': birthday_month, 'birthday_year': birthday_year})
+        cls.update_my_table({'cia': get_text_in_table(7)})
 
         cls.update_crawler_status(True)
 
@@ -103,12 +103,12 @@ class CrawlerEtufor(Crawler):
             # não há mais dados a serem colhidos
             return
 
-        cls.db.update_entity_row({'name_monther': get_text_in_table(16)})
+        cls.db.update_entity_row({'name_monther': get_text_in_table(16).title()})
 
         regexp_timestamp = re.compile(r'(\d+)\/(\d+)\/(\d+)\s(\d+):(\d+):(\d+)')
-        pos = 37
+        pos = 33
         while True:
-            if get_text_in_table(pos) == '_______ HISTÓRICO DE ETAPAS DO PROCESSO \n\t\t\t\t\t\t\tATUAL&nbsp;_______':
+            if get_text_in_table(pos) == 'HISTÓRICO DE ETAPAS DO PROCESSO ATUAL':
                 break
             timestamp, school, school_type, course, turn =\
                 get_text_in_table(pos), get_text_in_table(pos + 2), get_text_in_table(pos + 3), get_text_in_table(pos + 8), get_text_in_table(pos + 4)
